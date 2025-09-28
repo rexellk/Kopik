@@ -1,74 +1,232 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { DollarSign, TrendingDown, TrendingUp, RotateCcw } from "lucide-react";
+
+// Keep: Weather impact simulator & Intelligence hub (existing components)
+import WeatherPanel from "../components/dashboard/WeatherPanel";
+import IntelligenceFeed from "../components/dashboard/IntelligenceFeed";
+import AIRecommendations from "../components/dashboard/AIRecommendations";
+
+// Minimal entities to load inventory + AI data
 import {
   InventoryItem,
   Recommendation,
   IntelligenceSignal,
-} from "../src/services/entities.js";
-import { ApiError } from "../src/services/api.js";
-import { motion } from "framer-motion";
-import { Package, AlertTriangle, DollarSign, Brain } from "lucide-react";
+} from "@entities/all";
 
-import StatusCard from "../Components/dashboard/StatusCard";
-import InventoryGrid from "../Components/dashboard/InventoryGrid";
-import WeatherPanel from "../Components/dashboard/WeatherPanel";
-import AIRecommendations from "../Components/dashboard/AIRecommendations";
-import ProfitCalculator from "../Components/dashboard/ProfitCalculator";
-import IntelligenceFeed from "../Components/dashboard/IntelligenceFeed";
+// ---------- Stub data taken & adapted from Analytics ---------- //
+const salesTrendData = [
+  { date: "Jan 01", sales: 1250, predicted: 1300 },
+  { date: "Jan 02", sales: 1180, predicted: 1200 },
+  { date: "Jan 03", sales: 1320, predicted: 1310 },
+  { date: "Jan 04", sales: 1450, predicted: 1400 },
+  { date: "Jan 05", sales: 1510, predicted: 1500 },
+  { date: "Jan 06", sales: 1480, predicted: 1490 },
+  { date: "Jan 07", sales: 1550, predicted: 1550 },
+];
 
-export default function Dashboard() {
+const wasteBeforeAfter = [
+  { month: "Oct", beforeKopik: 850, afterKopik: 320 },
+  { month: "Nov", beforeKopik: 920, afterKopik: 290 },
+  { month: "Dec", beforeKopik: 780, afterKopik: 245 },
+  { month: "Jan", beforeKopik: 810, afterKopik: 210 },
+];
+// Convert to a single-series "Food Waste Reduction %"
+const wasteReductionPct = wasteBeforeAfter.map(
+  ({ month, beforeKopik, afterKopik }) => ({
+    month,
+    reductionPct: Math.round(((beforeKopik - afterKopik) / beforeKopik) * 100),
+  })
+);
+
+const topItemsData = [
+  {
+    name: "Cappuccino",
+    category: "Beverages",
+    unitsSold: 245,
+    revenue: 1225,
+    margin: 68,
+    trend: 12,
+  },
+  {
+    name: "Croissant",
+    category: "Pastries",
+    unitsSold: 189,
+    revenue: 756,
+    margin: 45,
+    trend: 8,
+  },
+  {
+    name: "Cold Brew",
+    category: "Beverages",
+    unitsSold: 152,
+    revenue: 912,
+    margin: 72,
+    trend: 25,
+  },
+  {
+    name: "Avocado Toast",
+    category: "Food",
+    unitsSold: 112,
+    revenue: 1232,
+    margin: 55,
+    trend: -5,
+  },
+];
+
+const supplierData = [
+  {
+    name: "King Arthur",
+    category: "Baking",
+    rating: 4.8,
+    onTimeDelivery: 98,
+    qualityScore: 99,
+  },
+  {
+    name: "Blue Bottle",
+    category: "Beverages",
+    rating: 4.9,
+    onTimeDelivery: 99,
+    qualityScore: 99,
+  },
+  {
+    name: "Local Dairy Co",
+    category: "Dairy",
+    rating: 4.5,
+    onTimeDelivery: 95,
+    qualityScore: 97,
+  },
+];
+
+const revenueBreakdown = [
+  { name: "Beverages", value: 400 },
+  { name: "Pastries", value: 300 },
+  { name: "Food", value: 200 },
+  { name: "Merch", value: 100 },
+];
+
+const costStructure = [
+  { category: "Ingredients", amount: 8000, percentage: 45 },
+  { category: "Labor", amount: 6000, percentage: 35 },
+  { category: "Rent", amount: 3000, percentage: 15 },
+  { category: "Other", amount: 1000, percentage: 5 },
+];
+
+// ---------- UI bits ---------- //
+const MetricCard = ({ title, value, change, timeframe, icon: Icon, color }) => (
+  <Card className="shadow-sm border rounded-2xl">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-gray-600">
+        {title}
+      </CardTitle>
+      <Icon className={`h-4 w-4 ${color}`} />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-gray-900">{value}</div>
+      {change && timeframe && (
+        <p className="text-xs text-gray-500 mt-2">
+          {change} {timeframe}
+        </p>
+      )}
+    </CardContent>
+  </Card>
+);
+
+export default function UnifiedDashboard() {
+  // From Dashboard: critical items + recommendations + intelligence
   const [inventoryData, setInventoryData] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [intelligenceSignals, setIntelligenceSignals] = useState([]);
   const [selectedWeather, setSelectedWeather] = useState("cloudy");
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const [inventory, recs, signals] = await Promise.all([
-        InventoryItem.list(),
-        Recommendation.list(),
-        IntelligenceSignal.list(),
-      ]);
-
-      const updatedInventory = inventory.map((item) => {
-        const daily_usage = item.daily_usage || 1; // Prevent division by zero
-        const currentStock = item.current_stock || item.currentStock || 0;
-        const daysLeft = Math.floor(currentStock / daily_usage);
-        let status = "good";
-        if (daysLeft <= 2) status = "critical";
-        else if (daysLeft <= 5) status = "low";
-
-        return { ...item, daysLeft, status, currentStock };
-      });
-
-      setInventoryData(updatedInventory);
-      setRecommendations(recs);
-      setIntelligenceSignals(signals);
-      setRetryCount(0); // Reset retry count on success
-    } catch (error) {
-      console.error("Error loading data:", error);
-      setError(error instanceof ApiError ? error.message : "Failed to load data. Please check your connection.");
-    } finally {
-      setIsLoading(false);
-    }
+  // Weather impact descriptors used below the simulator
+  const weatherImpact = {
+    sunny: {
+      label: "Sunny",
+      bg: "bg-yellow-50",
+      text: "Expect +80% cold drinks, +20% footfall. Prepare ice, cold brew, smoothies.",
+    },
+    rainy: {
+      label: "Rainy",
+      bg: "bg-blue-50",
+      text: "Expect +25% hot drinks, +15% pastries. Emphasize soups and baked goods.",
+    },
+    cloudy: {
+      label: "Cloudy",
+      bg: "bg-gray-50",
+      text: "Expect +10% hot drinks. Steady footfall; focus on comfort items.",
+    },
   };
 
-  const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
-    loadData();
-  };
+  // Load base data
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [inventory, recs, signals] = await Promise.all([
+          InventoryItem.list(),
+          Recommendation.list(),
+          IntelligenceSignal.list(),
+        ]);
 
-  const generateAdvancedRecommendations = useCallback(() => {
-    // This is a simplified simulation for demo purposes.
-    // A real implementation would involve a more complex AI model.
-    let newRecs = [];
+        const updatedInventory = (inventory || []).map((item) => {
+          const daily_usage = item?.daily_usage || 1;
+          const daysLeft = (item?.currentStock || 0) / daily_usage;
+          let status = "good";
+          if (daysLeft <= 2) status = "critical";
+          else if (daysLeft <= 5) status = "low";
+          return { ...item, daysLeft, status };
+        });
 
-    // Example 1: Perfect Storm - Concert + Sunny + Payday
+        setInventoryData(updatedInventory);
+        setRecommendations(recs || []);
+
+        // Prefer JSON file if present; fall back to entities class list
+        try {
+          const json = await import("@entities/IntelligenceSignal.json");
+          const payload = json?.default || json;
+          if (payload && Array.isArray(payload)) {
+            setIntelligenceSignals(payload);
+          } else {
+            setIntelligenceSignals(signals || []);
+          }
+        } catch (e) {
+          setIntelligenceSignals(signals || []);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  // Dynamic AI recs influenced by weather + signals
+  const generateDynamicRecs = useCallback(() => {
+    const newRecs = [];
+
     if (
       intelligenceSignals.some((s) => s.name === "Taylor Swift Concert") &&
       selectedWeather === "sunny" &&
@@ -78,7 +236,7 @@ export default function Dashboard() {
         priority: "high",
         title: '"Perfect Storm": Concert + Sunny + Payday',
         description:
-          "Anticipate 400% demand for premium cold drinks and desserts. Extend hours, triple stock of cold brew & premium cookies.",
+          "Anticipate 400% demand for premium cold drinks and desserts. Extend hours; triple cold brew & premium cookies.",
         profit_impact: 2400,
         confidence: 94,
         action_required: true,
@@ -91,18 +249,17 @@ export default function Dashboard() {
       });
     }
 
-    // Example 2: Rainy day special with low flour stock
     if (
       selectedWeather === "rainy" &&
       inventoryData.some(
-        (i) => i.name.toLowerCase().includes("flour") && i.status === "low"
+        (i) => i.name?.toLowerCase().includes("flour") && i.status === "low"
       )
     ) {
       newRecs.push({
         priority: "medium",
         title: "Rainy Day Pastry Push",
         description:
-          'Rain increases pastry demand. With flour stocks low, consider a "2-for-1" on existing pastries to sell through before reordering.',
+          'Rain increases pastry demand. With flour low, consider a "2-for-1" on pastries to sell through before reorder.',
         profit_impact: 80,
         confidence: 85,
         action_required: true,
@@ -111,29 +268,26 @@ export default function Dashboard() {
       });
     }
 
-    // Example 3: Cold weather for hot beverages
     if (selectedWeather === "cloudy" || selectedWeather === "rainy") {
-      // Assuming 'cloudy' can imply colder or damp weather
       newRecs.push({
         priority: "low",
         title: "Increase Hot Beverage Prep",
         description:
-          "Colder weather typically increases hot coffee sales. Consider preparing 20% more hot beverages.",
+          "Colder weather increases hot coffee sales. Prep ~20% more hot beverages.",
         profit_impact: 120,
         confidence: 88,
         action_required: true,
         category: "weather",
-        trigger_sources: ["Cloudy Weather"],
+        trigger_sources: ["Cloudy/Rainy"],
       });
     }
 
-    // Example 4: Sunny weather for cold drinks
     if (selectedWeather === "sunny") {
       newRecs.push({
         priority: "low",
         title: "Boost Cold Drink Stock",
         description:
-          "Sunny weather increases cold drink demand by 80%. Ensure adequate ice and cold beverage inventory.",
+          "Sunny weather increases cold drink demand by ~80%. Ensure ice & cold beverage inventory.",
         profit_impact: 150,
         confidence: 92,
         action_required: true,
@@ -142,217 +296,328 @@ export default function Dashboard() {
       });
     }
 
-    // Filter out previous dynamic recommendations (weather, demand, promotion)
-    // and combine with new dynamic ones
     setRecommendations((prev) => [
       ...newRecs,
       ...prev.filter(
-        (r) =>
-          r.category !== "demand" &&
-          r.category !== "weather" &&
-          r.category !== "promotion"
+        (r) => !["demand", "weather", "promotion"].includes(r.category)
       ),
     ]);
   }, [selectedWeather, intelligenceSignals, inventoryData]);
 
   useEffect(() => {
-    loadData();
-  }, []); // Empty dependency array means this runs once on mount
-
-  useEffect(() => {
-    if (!isLoading) {
-      generateAdvancedRecommendations();
-    }
-  }, [selectedWeather, isLoading, generateAdvancedRecommendations]); // Depends on selectedWeather, isLoading, and memoized generateAdvancedRecommendations
-
-  const handleReorder = (item) => {
-    // In a real app, this would trigger a reorder process
-    console.log("Reordering:", item.name);
-  };
-
-  const handleApplyRecommendation = (rec) => {
-    console.log("Applying recommendation:", rec.title);
-  };
+    if (!isLoading) generateDynamicRecs();
+  }, [isLoading, selectedWeather, generateDynamicRecs]);
 
   const criticalItems = inventoryData.filter(
-    (item) => item.status === "critical"
+    (i) => i.status === "critical"
   ).length;
-  const dailyWaste = 125; // Mock value
-  const predictedProfit = 1450; // Increased profit with new intelligence
-  const aiConfidence = 97; // Increased confidence
 
-  // Loading screen
-  if (isLoading && inventoryData.length === 0) {
-    return (
-      <div className="p-6 bg-gray-50 min-h-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Dashboard</h2>
-          <p className="text-gray-600">Fetching latest inventory data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error screen
-  if (error) {
-    return (
-      <div className="p-6 bg-gray-50 min-h-full flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="mb-4">
-            <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Connection Error</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <div className="space-y-2">
-              <button
-                onClick={handleRetry}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Retry Connection
-              </button>
-              <p className="text-sm text-gray-500">
-                Make sure the backend server is running on localhost:8000
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Static business KPIs (can be wired to backend later)
+  const totalRevenue = "$45,720";
+  const foodWasteReduction = "32%"; // overall headline
+  const inventoryTurnover = "8.4x";
+  const profitMargin = "28.7%";
 
   return (
-    <div className="p-6 bg-gray-50 min-h-full space-y-8">
+    <div className="p-6 bg-gray-50 min-h-screen space-y-6">
       {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            AI-powered inventory insights for Demo Cafe
-          </p>
-          {isLoading && (
-            <div className="flex items-center gap-2 mt-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span className="text-sm text-blue-600">Refreshing data...</span>
-            </div>
-          )}
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500">Last updated</p>
-          <p className="font-semibold text-gray-900">
-            {new Date().toLocaleTimeString()}
-          </p>
-          <button
-            onClick={loadData}
-            className="text-sm text-blue-600 hover:text-blue-800 mt-1"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Refreshing...' : 'Refresh Data'}
-          </button>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-900">Ondo Bakery</h1>
       </motion.div>
 
-      {/* Status Cards */}
+      {/* Critical + Revenue + Waste Reduction + Inventory Turnover + Profit Margin */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
       >
-        <StatusCard
+        <MetricCard
           title="Critical Items"
           value={criticalItems}
-          subtitle="Need immediate attention"
-          icon={AlertTriangle}
-          trend="negative"
-          trendValue="+2"
-          colorClass="bg-red-500"
-          bgGradient="bg-gradient-to-r from-red-500 to-red-600"
+          icon={TrendingDown}
+          color="text-red-500"
         />
-        <StatusCard
-          title="Daily Waste"
-          value={`$${dailyWaste}`}
-          subtitle="35% reduction this month"
-          icon={Package}
-          trend="positive"
-          trendValue="-$60"
-          colorClass="bg-green-500"
-          bgGradient="bg-gradient-to-r from-green-500 to-green-600"
-        />
-        <StatusCard
-          title="Predicted Profit"
-          value={`$${predictedProfit.toLocaleString()}`}
-          subtitle="55% increase with AI"
+        <MetricCard
+          title="Total Revenue"
+          value={totalRevenue}
           icon={DollarSign}
-          trend="positive"
-          trendValue="+$600"
-          colorClass="bg-blue-500"
-          bgGradient="bg-gradient-to-r from-blue-500 to-blue-600"
+          color="text-emerald-500"
+          change="+12.5%"
+          timeframe="This Month"
         />
-        <StatusCard
-          title="AI Confidence"
-          value={`${aiConfidence}%`}
-          subtitle="Multi-source intelligence"
-          icon={Brain}
-          trend="positive"
-          trendValue="+3%"
-          colorClass="bg-purple-500"
-          bgGradient="bg-gradient-to-r from-purple-500 to-purple-600"
+        <MetricCard
+          title="Food Waste Reduction"
+          value={foodWasteReduction}
+          icon={TrendingDown}
+          color="text-blue-500"
+          change="+8.2%"
+          timeframe="vs Last Month"
+        />
+        <MetricCard
+          title="Inventory Turnover"
+          value={inventoryTurnover}
+          icon={RotateCcw}
+          color="text-purple-500"
+          change="+1.2x"
+          timeframe="Quarterly"
+        />
+        <MetricCard
+          title="Profit Margin"
+          value={profitMargin}
+          icon={TrendingUp}
+          color="text-emerald-600"
+          change="+3.1%"
+          timeframe="YTD"
         />
       </motion.div>
 
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left Column - Inventory */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="lg:col-span-2"
-        >
-          <InventoryGrid
-            inventoryData={inventoryData}
-            onReorder={handleReorder}
-          />
-        </motion.div>
-
-        {/* Right Column - Weather & Intelligence */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-6"
-        >
-          <WeatherPanel
-            selectedWeather={selectedWeather}
-            onWeatherChange={setSelectedWeather}
-          />
-          <IntelligenceFeed intelligenceSignals={intelligenceSignals} />
-        </motion.div>
-      </div>
-
-      {/* Middle Section - AI Recommendations */}
+      {/* Side-by-side: Daily Sales Trend & Food Waste Reduction (single-series) */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        <Card className="border rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Daily Sales Trend</h3>
+            <select className="border rounded-lg px-3 py-1 text-sm bg-white">
+              <option>Last 7 Days</option>
+            </select>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={salesTrendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+              <Tooltip
+                formatter={(v, n) => [
+                  `$${v}`,
+                  n === "sales" ? "Actual" : "Predicted",
+                ]}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="sales"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                name="Actual"
+              />
+              <Line
+                type="monotone"
+                dataKey="predicted"
+                stroke="#10B981"
+                strokeDasharray="5 5"
+                name="Predicted"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card className="border rounded-2xl p-6">
+          <h3 className="text-lg font-semibold mb-4">
+            Food Waste Reduction (%)
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={wasteReductionPct}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}%`} />
+              <Tooltip formatter={(v) => [`${v}%`, "Reduction"]} />
+              <Legend />
+              <Bar
+                dataKey="reductionPct"
+                fill="#10B981"
+                radius={[4, 4, 0, 0]}
+                name="Reduction %"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      </motion.div>
+
+      {/* AI Recommendations */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
       >
         <AIRecommendations
           recommendations={recommendations}
-          onApplyRecommendation={handleApplyRecommendation}
+          onApplyRecommendation={(rec) =>
+            console.log("Apply recommendation:", rec?.title)
+          }
         />
       </motion.div>
 
-      {/* Bottom Section - Profit Calculator */}
+      {/* Top Performing Items */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
       >
-        <ProfitCalculator />
+        <Card className="border rounded-2xl p-6">
+          <h3 className="text-lg font-semibold mb-4">Top Performing Items</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead>Units Sold</TableHead>
+                <TableHead>Revenue</TableHead>
+                <TableHead>Margin</TableHead>
+                <TableHead>Trend</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {topItemsData.map((item, idx) => (
+                <TableRow key={idx} className="border-b hover:bg-gray-50/50">
+                  <TableCell>
+                    <div className="font-medium">{item.name}</div>
+                    <div className="text-sm text-gray-500">{item.category}</div>
+                  </TableCell>
+                  <TableCell className="font-semibold">
+                    {item.unitsSold}
+                  </TableCell>
+                  <TableCell className="font-semibold text-emerald-600">
+                    ${item.revenue}
+                  </TableCell>
+                  <TableCell>{item.margin}%</TableCell>
+                  <TableCell>
+                    <span
+                      className={`${
+                        item.trend > 0 ? "text-emerald-600" : "text-red-500"
+                      } font-semibold`}
+                    >
+                      {item.trend > 0 ? "+" : ""}
+                      {item.trend}%
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      </motion.div>
+
+      {/* Profit Analysis — now full width for more space */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <Card className="border rounded-2xl p-6">
+          <h3 className="text-lg font-semibold mb-2">Profit Analysis</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+            <div>
+              <h4 className="text-sm font-medium mb-2 text-center">
+                Revenue Breakdown
+              </h4>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={revenueBreakdown}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar
+                    dataKey="value"
+                    fill="#3B82F6"
+                    radius={[4, 4, 0, 0]}
+                    name="Revenue"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium mb-2">Cost Structure</h4>
+              <div className="space-y-3 pt-2">
+                {costStructure.map((c, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between items-center text-sm mb-1">
+                      <span className="text-gray-600">{c.category}</span>
+                      <span className="font-semibold">${c.amount}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full bg-blue-600"
+                        style={{ width: `${c.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Weather Impact Simulator — full width with dynamic background and extra spacing */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <Card className={`border rounded-2xl p-4`}>
+          <h3 className="text-lg font-semibold mb-2">
+            Weather Impact Simulator
+          </h3>
+          <div className="p-2">
+            <WeatherPanel
+              selectedWeather={selectedWeather}
+              onWeatherChange={setSelectedWeather}
+            />
+          </div>
+          <div className="mt-4 rounded-xl border bg-white/60 p-4">
+            <div className="text-sm text-gray-700">
+              <span className="font-semibold">Expected impact: </span>
+              {weatherImpact[selectedWeather]?.text}
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Supplier Performance (40%) + Intelligence Hub (60%) */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-1 lg:grid-cols-10 gap-6"
+      >
+        <Card className="border rounded-2xl p-6 lg:col-span-4">
+          <h3 className="text-lg font-semibold mb-4">Supplier Performance</h3>
+          <div className="space-y-3">
+            {supplierData.map((s, i) => (
+              <div key={i} className="border rounded-xl p-3 bg-gray-50">
+                <div className="flex items-start justify-between mb-1">
+                  <div>
+                    <h4 className="font-semibold">{s.name}</h4>
+                    <p className="text-xs text-gray-500">{s.category}</p>
+                  </div>
+                  <span className="px-2 py-1 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">
+                    {s.rating}/5.0
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>On-time:</span>
+                    <span className="font-semibold">{s.onTimeDelivery}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Quality:</span>
+                    <span className="font-semibold">{s.qualityScore}%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="border rounded-2xl p-4 lg:col-span-6">
+          <h3 className="text-lg font-semibold mb-2">
+            Intelligence Hub (Events & Concerts)
+          </h3>
+          <div className="p-2">
+            <IntelligenceFeed intelligenceSignals={intelligenceSignals} />
+          </div>
+        </Card>
       </motion.div>
     </div>
   );

@@ -1,186 +1,150 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React from "react";
 import { motion } from "framer-motion";
-import {
-  Sun,
-  CloudRain,
-  Cloud,
-  Flame,
-  Thermometer,
-  TrendingUp,
-  TrendingDown,
-} from "lucide-react";
+import { Brain, Zap, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-const weatherOptions = [
-  {
-    id: "sunny",
-    label: "Sunny",
-    icon: Sun,
-    temp: "75°F",
-    description: "Clear skies",
-    impacts: {
-      "Hot Drinks": -30,
-      "Cold Drinks": +80,
-      "Ice Cream": +120,
-      "Outdoor Seating": +60,
+/**
+ * Props
+ * - recommendations: Array<{
+ *    priority: 'low' | 'medium' | 'high',
+ *    title: string,
+ *    description?: string,
+ *    profit_impact?: number,
+ *    confidence?: number,
+ *    action_required?: boolean,
+ *    category?: string,
+ *    trigger_sources?: string[]
+ * }>
+ * - onApplyRecommendation?: (rec) => void
+ */
+export default function AIRecommendations({
+  recommendations = [],
+  onApplyRecommendation = () => {},
+}) {
+  const priorityMap = {
+    low: {
+      badge: "LOW PRIORITY",
+      bg: "bg-blue-50",
+      chip: "bg-blue-100 text-blue-700",
+      border: "border-blue-200",
+      icon: ShieldCheck,
+      dollar: "text-emerald-600",
     },
-    bgGradient: "from-yellow-400 to-orange-500",
-  },
-  {
-    id: "rainy",
-    label: "Rainy",
-    icon: CloudRain,
-    temp: "45°F",
-    description: "Light rain",
-    impacts: {
-      "Hot Drinks": +40,
-      Pastries: +15,
-      Soup: +85,
-      "Comfort Food": +25,
+    medium: {
+      badge: "MEDIUM PRIORITY",
+      bg: "bg-amber-50",
+      chip: "bg-amber-100 text-amber-800",
+      border: "border-amber-200",
+      icon: Zap,
+      dollar: "text-emerald-600",
     },
-    bgGradient: "from-blue-400 to-blue-600",
-  },
-  {
-    id: "cloudy",
-    label: "Cloudy",
-    icon: Cloud,
-    temp: "65°F",
-    description: "Overcast",
-    impacts: {
-      "All Items": 0,
+    high: {
+      badge: "HIGH PRIORITY",
+      bg: "bg-red-50",
+      chip: "bg-red-100 text-red-700",
+      border: "border-red-200",
+      icon: AlertTriangle,
+      dollar: "text-emerald-600",
     },
-    bgGradient: "from-gray-400 to-gray-500",
-  },
-  {
-    id: "hot",
-    label: "Hot",
-    icon: Flame,
-    temp: "90°F",
-    description: "Heat wave",
-    impacts: {
-      "Cold Drinks": +120,
-      "Hot Food": -50,
-      "Ice Cream": +200,
-      "Frozen Items": +90,
-    },
-    bgGradient: "from-red-500 to-red-600",
-  },
-];
+  };
 
-export default function WeatherPanel({ selectedWeather, onWeatherChange }) {
-  const currentWeather =
-    weatherOptions.find((w) => w.id === selectedWeather) || weatherOptions[0];
+  // Limit to top 3 to avoid overpopulating the dashboard
+  const limited = recommendations.slice(0, 3);
 
   return (
-    <Card className="shadow-elegant border-0">
-      <CardHeader className="border-b border-gray-100">
-        <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <Thermometer className="h-5 w-5 text-blue-600" />
-          Weather Impact Simulator
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        {/* Weather Selection */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {weatherOptions.map((weather) => {
-            const Icon = weather.icon;
-            return (
-              <motion.div
-                key={weather.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Button
-                  variant={
-                    selectedWeather === weather.id ? "default" : "outline"
-                  }
-                  className={`w-full h-20 flex flex-col gap-1 ${
-                    selectedWeather === weather.id
-                      ? `bg-gradient-to-r ${weather.bgGradient} text-white border-0 shadow-lg`
-                      : "hover:bg-gray-50"
-                  }`}
-                  onClick={() => onWeatherChange(weather.id)}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-xs font-medium">{weather.label}</span>
-                  <span className="text-xs opacity-80">{weather.temp}</span>
-                </Button>
-              </motion.div>
-            );
-          })}
-        </div>
+    <section>
+      <div className="flex items-center gap-2 mb-3">
+        <Brain className="h-5 w-5 text-blue-600" />
+        <h2 className="text-xl font-semibold">AI Recommendations</h2>
+      </div>
 
-        {/* Current Weather Display */}
-        <div
-          className={`p-4 rounded-xl bg-gradient-to-r ${currentWeather.bgGradient} text-white mb-6`}
-        >
-          <div className="flex items-center gap-3">
-            <currentWeather.icon className="h-8 w-8" />
-            <div>
-              <h3 className="font-bold text-lg">
-                {currentWeather.label} Weather
-              </h3>
-              <p className="text-sm opacity-90">
-                {currentWeather.temp} - {currentWeather.description}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Impact Preview */}
-        <div className="space-y-3">
-          <h4 className="font-semibold text-gray-900 mb-3">Expected Impact:</h4>
-          {Object.entries(currentWeather.impacts).map(([item, impact]) => (
+      {/* Equal-height columns */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+        {limited.map((rec, idx) => {
+          const pri = priorityMap[rec.priority?.toLowerCase?.() || "low"];
+          const Icon = pri.icon;
+          return (
             <motion.div
-              key={item}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              key={`${rec.title}-${idx}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="h-full"
             >
-              <span className="font-medium text-gray-700">{item}</span>
-              <div className="flex items-center gap-2">
-                {impact > 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                ) : impact < 0 ? (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                ) : null}
-                <span
-                  className={`font-semibold ${
-                    impact > 0
-                      ? "text-green-600"
-                      : impact < 0
-                      ? "text-red-600"
-                      : "text-gray-600"
-                  }`}
-                >
-                  {impact > 0 ? "+" : ""}
-                  {impact}%
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              <Card
+                className={`h-full flex flex-col rounded-2xl overflow-hidden border ${pri.border}`}
+              >
+                <CardHeader className={`${pri.bg} pb-4`}>
+                  <div className="flex items-start justify-between">
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${pri.chip}`}
+                    >
+                      {pri.badge}
+                    </span>
+                    {typeof rec.confidence === "number" && (
+                      <span className="text-gray-600 text-xs">
+                        {rec.confidence}% confidence
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2 flex items-start gap-2">
+                    <Icon className="h-4 w-4 mt-0.5 text-gray-700" />
+                    <CardTitle className="text-base">{rec.title}</CardTitle>
+                  </div>
+                </CardHeader>
 
-        {/* 3-Day Forecast */}
-        <div className="mt-6 pt-6 border-t border-gray-100">
-          <h4 className="font-semibold text-gray-900 mb-3">
-            3-Day Forecast Impact
-          </h4>
-          <div className="grid grid-cols-3 gap-3">
-            {["Today", "Tomorrow", "Thursday"].map((day, index) => (
-              <div key={day} className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium text-gray-900 text-sm">{day}</p>
-                <currentWeather.icon className="h-5 w-5 mx-auto my-2 text-gray-600" />
-                <p className="text-xs text-gray-600">{currentWeather.temp}</p>
-                <p className="text-xs font-medium text-green-600 mt-1">
-                  +${(120 + index * 30).toFixed(0)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+                {/* flex-1 makes contents fill remaining height so all cards match */}
+                <CardContent className="flex-1 flex flex-col pt-4 space-y-3">
+                  {rec.description && (
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {rec.description}
+                    </p>
+                  )}
+
+                  <div className="text-sm">
+                    <div className="text-xs font-semibold text-gray-600 flex items-center gap-1">
+                      <Zap className="h-4 w-4 text-blue-600" /> AI TRIGGERS
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {(rec.trigger_sources || []).length > 0 ? (
+                        rec.trigger_sources.map((t, i) => (
+                          <span
+                            key={i}
+                            className="px-2.5 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
+                          >
+                            {t}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          No triggers listed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* optional footer space to pin CTA if you add one later */}
+                  {/* <div className="mt-auto pt-2">
+                    <Button size="sm" className="rounded-xl" onClick={() => onApplyRecommendation(rec)}>Apply</Button>
+                  </div> */}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {limited.length === 0 && (
+        <Card className="mt-2">
+          <CardHeader>
+            <CardTitle className="text-base text-gray-600">
+              No recommendations yet
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-gray-500">
+            Insights will appear here as signals and forecasts update.
+          </CardContent>
+        </Card>
+      )}
+    </section>
   );
 }

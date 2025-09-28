@@ -1,8 +1,13 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { BarChart3, Package, CloudSun, TrendingUp, Settings } from "lucide-react";
-import ApiStatus from "./src/components/ApiStatus.jsx";
+import {
+  BarChart3,
+  Package,
+  CloudSun,
+  TrendingUp,
+  Settings,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -34,11 +39,6 @@ const navigationItems = [
     url: createPageUrl("Weather"),
     icon: CloudSun,
   },
-  {
-    title: "Analytics",
-    url: createPageUrl("Analytics"),
-    icon: TrendingUp,
-  }
 ];
 
 export default function Layout({ children, currentPageName }) {
@@ -46,7 +46,8 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      {/* lock layout to viewport and prevent page-level scroll */}
+      <div className="h-screen overflow-hidden flex w/full">
         <style>
           {`
             :root {
@@ -75,8 +76,9 @@ export default function Layout({ children, currentPageName }) {
             }
           `}
         </style>
-        
-        <Sidebar className="border-r border-gray-100 shadow-elegant">
+
+        {/* fixed, full-height sidebar */}
+        <Sidebar className="border-r border-gray-100 shadow-elegant h-screen sticky top-0 flex flex-col">
           <SidebarHeader className="border-b border-gray-100 p-6 bg-gradient-to-r from-blue-600 to-blue-700">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -84,12 +86,13 @@ export default function Layout({ children, currentPageName }) {
               </div>
               <div>
                 <h1 className="font-bold text-xl text-white">Kopik</h1>
-                <p className="text-xs text-blue-100">AI Inventory Oracle</p>
+                <p className="text-xs text-blue-100">POS Management System</p>
               </div>
             </div>
           </SidebarHeader>
-          
-          <SidebarContent className="p-4">
+
+          {/* middle area scrolls within sidebar if needed */}
+          <SidebarContent className="p-4 flex-1 overflow-y-auto">
             <SidebarGroup>
               <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-3">
                 Navigation
@@ -98,13 +101,18 @@ export default function Layout({ children, currentPageName }) {
                 <SidebarMenu>
                   {navigationItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        asChild 
+                      <SidebarMenuButton
+                        asChild
                         className={`hover:bg-blue-50 hover:text-blue-700 transition-all duration-300 rounded-xl mb-2 ${
-                          location.pathname === item.url ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-600'
+                          location.pathname === item.url
+                            ? "bg-blue-50 text-blue-700 shadow-sm"
+                            : "text-gray-600"
                         }`}
                       >
-                        <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
+                        <Link
+                          to={item.url}
+                          className="flex items-center gap-3 px-4 py-3"
+                        >
                           <item.icon className="w-5 h-5" />
                           <span className="font-medium">{item.title}</span>
                         </Link>
@@ -126,7 +134,9 @@ export default function Layout({ children, currentPageName }) {
                     <span className="font-bold text-green-600">+$340</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Waste Reduction</span>
+                    <span className="text-sm text-gray-600">
+                      Waste Reduction
+                    </span>
                     <span className="font-bold text-green-600">-28%</span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -138,24 +148,24 @@ export default function Layout({ children, currentPageName }) {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-gray-100 p-4 space-y-4">
-            <div className="px-2">
-              <ApiStatus />
-            </div>
-            
+          {/* pinned footer at the very bottom */}
+          <SidebarFooter className="border-t border-gray-100 p-4 mt-auto">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">DC</span>
+                <span className="text-white font-semibold text-sm">ON</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 text-sm truncate">Demo Cafe</p>
+                <p className="font-semibold text-gray-900 text-sm truncate">
+                  Ondo Bakery
+                </p>
                 <p className="text-xs text-gray-500 truncate">Premium Plan</p>
               </div>
             </div>
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 flex flex-col">
+        {/* right side: only this scrolls */}
+        <main className="flex-1 flex flex-col min-h-0">
           <header className="bg-white border-b border-gray-100 px-6 py-4 md:hidden shadow-sm">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200" />
@@ -163,7 +173,7 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </header>
 
-          <div className="flex-1 bg-gray-50 overflow-auto">
+          <div className="flex-1 bg-gray-50 overflow-auto min-h-0">
             {children}
           </div>
         </main>
