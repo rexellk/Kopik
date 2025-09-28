@@ -1,0 +1,61 @@
+{
+  "name": "Recommendation",
+  "type": "object",
+  "properties": {
+    "priority": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "description": "Priority level of the recommendation"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short title of the recommendation"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description and reasoning"
+    },
+    "profit_impact": {
+      "type": "number",
+      "description": "Estimated profit impact in dollars"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "AI confidence percentage"
+    },
+    "action_required": {
+      "type": "boolean",
+      "description": "Whether immediate action is required"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "inventory",
+        "weather",
+        "demand",
+        "waste",
+        "promotion"
+      ],
+      "description": "Category of recommendation"
+    },
+    "trigger_sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of intelligence signal names that triggered this recommendation"
+    }
+  },
+  "required": [
+    "priority",
+    "title",
+    "description",
+    "confidence"
+  ]
+}

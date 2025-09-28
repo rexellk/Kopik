@@ -1,0 +1,45 @@
+{
+  "name": "IntelligenceSignal",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the intelligence signal (e.g., Taylor Swift Concert)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Social",
+        "Event",
+        "Economic",
+        "Calendar",
+        "Health",
+        "Environment"
+      ],
+      "description": "The category of the signal"
+    },
+    "impact_description": {
+      "type": "string",
+      "description": "A brief summary of the business impact"
+    },
+    "impact_value": {
+      "type": "number",
+      "description": "A numeric representation of the impact (e.g., +200% demand)"
+    },
+    "details": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "A flexible JSON object for specific data about the signal"
+    },
+    "active_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The date and time this signal is most relevant"
+    }
+  },
+  "required": [
+    "name",
+    "category",
+    "impact_description"
+  ]
+}

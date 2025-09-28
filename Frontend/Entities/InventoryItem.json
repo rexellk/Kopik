@@ -1,0 +1,100 @@
+{
+  "name": "InventoryItem",
+  "type": "object",
+  "properties": {
+    "item_id": {
+      "type": "string",
+      "description": "Unique identifier for the inventory item"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the inventory item"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Baking",
+        "Beverages",
+        "Dairy",
+        "Produce",
+        "Proteins",
+        "Condiments",
+        "Frozen",
+        "Supplies",
+        "Baking Ingredients"
+      ],
+      "description": "Category of the inventory item"
+    },
+    "current_stock": {
+      "type": "number",
+      "description": "Current stock level"
+    },
+    "unit": {
+      "type": "string",
+      "description": "Unit of measurement (lbs, gallons, pieces, etc.)"
+    },
+    "reorder_point": {
+      "type": "number",
+      "description": "Stock level that triggers reorder alert"
+    },
+    "daily_usage": {
+      "type": "number",
+      "description": "Average daily usage amount"
+    },
+    "cost_per_unit": {
+      "type": "number",
+      "description": "Cost per unit in dollars"
+    },
+    "supplier": {
+      "type": "string",
+      "description": "Supplier name"
+    },
+    "weather_sensitivity": {
+      "type": "object",
+      "properties": {
+        "sunny": {
+          "type": "number"
+        },
+        "rainy": {
+          "type": "number"
+        },
+        "hot": {
+          "type": "number"
+        },
+        "cloudy": {
+          "type": "number"
+        }
+      },
+      "description": "Weather impact multipliers for demand"
+    },
+    "sku": {
+      "type": "string",
+      "description": "Stock Keeping Unit"
+    },
+    "last_order_date": {
+      "type": "string",
+      "format": "date",
+      "description": "The date the item was last ordered"
+    },
+    "used_in": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of recipes this item is used in"
+    },
+    "ai_suggestion": {
+      "type": "number",
+      "description": "AI recommended reorder quantity"
+    }
+  },
+  "required": [
+    "item_id",
+    "name",
+    "category",
+    "current_stock",
+    "unit",
+    "daily_usage",
+    "cost_per_unit"
+  ]
+}
