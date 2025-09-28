@@ -3,15 +3,25 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from database import (
-    get_db, 
+    get_db,
     IntelligenceSignal as DBIntelligenceSignal,
     InventoryItem as DBInventoryItem,
-    Recommendation as DBRecommendation
+    Recommendation as DBRecommendation,
+    FoodWaste as DBFoodWaste,
+    Weather as DBWeather,
+    Event as DBEvent,
+    Sale as DBSale,
+    Order as DBOrder
 )
 from models import (
     IntelligenceSignal, IntelligenceSignalCreate,
     InventoryItem, InventoryItemCreate, InventoryItemUpdate,
-    Recommendation, RecommendationCreate
+    Recommendation, RecommendationCreate,
+    FoodWaste, FoodWasteCreate,
+    Weather, WeatherCreate,
+    Event, EventCreate,
+    Sale, SaleCreate,
+    Order, OrderCreate, OrderUpdate
 )
 
 router = APIRouter()
@@ -137,3 +147,252 @@ def get_high_priority_recommendations(db: Session = Depends(get_db)):
         DBRecommendation.priority == "high"
     ).all()
     return recommendations
+
+# Food Waste Routes
+@router.post("/food-waste/", response_model=FoodWaste)
+def create_food_waste(waste: FoodWasteCreate, db: Session = Depends(get_db)):
+    db_waste = DBFoodWaste(**waste.dict())
+    db.add(db_waste)
+    db.commit()
+    db.refresh(db_waste)
+    return db_waste
+
+@router.get("/food-waste/", response_model=List[FoodWaste])
+def read_food_waste(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    waste_records = db.query(DBFoodWaste).offset(skip).limit(limit).all()
+    return waste_records
+
+@router.get("/food-waste/recent/", response_model=List[FoodWaste])
+def get_recent_food_waste(days: int = 7, db: Session = Depends(get_db)):
+    from datetime import date, timedelta
+    cutoff_date = date.today() - timedelta(days=days)
+    waste_records = db.query(DBFoodWaste).filter(
+        DBFoodWaste.waste_date >= cutoff_date
+    ).all()
+    return waste_records
+
+# Weather Routes
+@router.post("/weather/", response_model=Weather)
+def create_weather(weather: WeatherCreate, db: Session = Depends(get_db)):
+    db_weather = DBWeather(**weather.dict())
+    db.add(db_weather)
+    db.commit()
+    db.refresh(db_weather)
+    return db_weather
+
+@router.get("/weather/", response_model=List[Weather])
+def read_weather(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    weather_records = db.query(DBWeather).order_by(DBWeather.date.desc()).offset(skip).limit(limit).all()
+    return weather_records
+
+@router.get("/weather/current/", response_model=Weather)
+def get_current_weather(db: Session = Depends(get_db)):
+    weather = db.query(DBWeather).order_by(DBWeather.date.desc()).first()
+    if weather is None:
+        raise HTTPException(status_code=404, detail="No weather data found")
+    return weather
+
+# Event Routes
+@router.post("/events/", response_model=Event)
+def create_event(event: EventCreate, db: Session = Depends(get_db)):
+    db_event = DBEvent(**event.dict())
+    db.add(db_event)
+    db.commit()
+    db.refresh(db_event)
+    return db_event
+
+@router.get("/events/", response_model=List[Event])
+def read_events(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    events = db.query(DBEvent).offset(skip).limit(limit).all()
+    return events
+
+@router.get("/events/upcoming/", response_model=List[Event])
+def get_upcoming_events(days: int = 14, db: Session = Depends(get_db)):
+    from datetime import date, timedelta
+    today = date.today()
+    future_date = today + timedelta(days=days)
+    events = db.query(DBEvent).filter(
+        DBEvent.start_date >= today,
+        DBEvent.start_date <= future_date
+    ).order_by(DBEvent.start_date).all()
+    return events
+
+# Sales Routes
+@router.post("/sales/", response_model=Sale)
+def create_sale(sale: SaleCreate, db: Session = Depends(get_db)):
+    db_sale = DBSale(**sale.dict())
+    db.add(db_sale)
+    db.commit()
+    db.refresh(db_sale)
+    return db_sale
+
+@router.get("/sales/", response_model=List[Sale])
+def read_sales(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    sales = db.query(DBSale).order_by(DBSale.sale_date.desc()).offset(skip).limit(limit).all()
+    return sales
+
+@router.get("/sales/recent/", response_model=List[Sale])
+def get_recent_sales(days: int = 7, db: Session = Depends(get_db)):
+    from datetime import date, timedelta
+    cutoff_date = date.today() - timedelta(days=days)
+    sales = db.query(DBSale).filter(
+        DBSale.sale_date >= cutoff_date
+    ).order_by(DBSale.sale_date.desc()).all()
+    return sales
+
+@router.get("/sales/by-item/{item_id}", response_model=List[Sale])
+def get_sales_by_item(item_id: str, days: int = 30, db: Session = Depends(get_db)):
+    from datetime import date, timedelta
+    cutoff_date = date.today() - timedelta(days=days)
+    sales = db.query(DBSale).filter(
+        DBSale.item_id == item_id,
+        DBSale.sale_date >= cutoff_date
+    ).order_by(DBSale.sale_date.desc()).all()
+    return sales
+
+# Order Routes
+@router.post("/orders/", response_model=Order)
+def create_order(order: OrderCreate, db: Session = Depends(get_db)):
+    db_order = DBOrder(**order.dict())
+    db.add(db_order)
+    db.commit()
+    db.refresh(db_order)
+    return db_order
+
+@router.get("/orders/", response_model=List[Order])
+def read_orders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    orders = db.query(DBOrder).order_by(DBOrder.order_date.desc()).offset(skip).limit(limit).all()
+    return orders
+
+@router.get("/orders/pending/", response_model=List[Order])
+def get_pending_orders(db: Session = Depends(get_db)):
+    orders = db.query(DBOrder).filter(
+        DBOrder.status.in_(["pending", "delayed"])
+    ).order_by(DBOrder.order_date.desc()).all()
+    return orders
+
+@router.put("/orders/{order_id}", response_model=Order)
+def update_order(order_id: int, order_update: OrderUpdate, db: Session = Depends(get_db)):
+    db_order = db.query(DBOrder).filter(DBOrder.id == order_id).first()
+    if db_order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    update_data = order_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_order, field, value)
+
+    db.commit()
+    db.refresh(db_order)
+    return db_order
+
+@router.get("/orders/{order_id}", response_model=Order)
+def read_order(order_id: int, db: Session = Depends(get_db)):
+    order = db.query(DBOrder).filter(DBOrder.id == order_id).first()
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order
+
+# AI Agent Intelligence Endpoints
+@router.get("/intelligence/dashboard")
+def get_intelligence_dashboard():
+    """Get comprehensive business intelligence insights for dashboard"""
+    try:
+        import sys
+        import os
+        from datetime import datetime
+
+        # Add agents directory to path
+        agents_path = os.path.join(os.path.dirname(__file__), 'agents')
+        if agents_path not in sys.path:
+            sys.path.append(agents_path)
+
+        from agents.enhanced_agent import EnhancedKopikAgent
+        from models import Priority
+
+        # Create agent and get data
+        agent = EnhancedKopikAgent()
+        data = agent.fetch_comprehensive_data()
+
+        # Run analyses
+        inventory_alerts, inventory_solutions = agent.analyze_inventory(data['inventory'])
+        waste_alerts, waste_solutions = agent.analyze_food_waste(data['food_waste'])
+        weather_alerts, weather_solutions = agent.analyze_weather_impact(data['weather'], data['sales'])
+        event_alerts, event_solutions = agent.analyze_events(data['events'])
+        order_alerts, order_solutions = agent.analyze_orders(data['orders'])
+
+        # Combine results
+        all_alerts = inventory_alerts + waste_alerts + weather_alerts + event_alerts + order_alerts
+        all_solutions = inventory_solutions + waste_solutions + weather_solutions + event_solutions + order_solutions
+
+        # Calculate metrics
+        high_priority_count = len([a for a in all_alerts if a.get('priority') == Priority.HIGH])
+        total_profit_impact = sum(s.get('profit_impact', 0) for s in all_solutions)
+
+        # Format response
+        return {
+            "success": True,
+            "timestamp": datetime.now().isoformat(),
+            "summary": {
+                "total_alerts": len(all_alerts),
+                "high_priority_alerts": high_priority_count,
+                "total_recommendations": len(all_solutions),
+                "total_profit_impact": round(total_profit_impact, 2)
+            },
+            "alerts": [
+                {
+                    "id": i + 1,
+                    "type": alert.get("type", "general"),
+                    "message": alert.get("message", ""),
+                    "priority": str(alert.get("priority", Priority.MEDIUM)),
+                    "category": str(alert.get("category", "general"))
+                }
+                for i, alert in enumerate(all_alerts[:10])  # Limit to top 10
+            ],
+            "recommendations": [
+                {
+                    "id": i + 1,
+                    "description": solution.get("description", ""),
+                    "confidence": round(solution.get("confidence", 80), 1),
+                    "profit_impact": round(solution.get("profit_impact", 0), 2)
+                }
+                for i, solution in enumerate(all_solutions[:10])  # Limit to top 10
+            ],
+            "data_overview": {
+                "low_stock_items": len(data['inventory']),
+                "recent_waste_records": len(data['food_waste']),
+                "upcoming_events": len(data['events']),
+                "pending_orders": len(data['orders'])
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Intelligence analysis failed: {str(e)}")
+
+@router.post("/intelligence/analyze")
+def trigger_intelligence_analysis():
+    """Trigger a fresh intelligence analysis and return summary"""
+    try:
+        import sys
+        import os
+        from datetime import datetime
+
+        # Add agents directory to path
+        agents_path = os.path.join(os.path.dirname(__file__), 'agents')
+        if agents_path not in sys.path:
+            sys.path.append(agents_path)
+
+        from agents.enhanced_agent import EnhancedKopikAgent
+
+        # Run analysis
+        agent = EnhancedKopikAgent()
+        success = agent.run_comprehensive_analysis()
+
+        return {
+            "success": success,
+            "message": "Analysis completed successfully" if success else "Analysis failed",
+            "timestamp": datetime.now().isoformat(),
+            "analysis_count": agent.analysis_count
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis trigger failed: {str(e)}")
