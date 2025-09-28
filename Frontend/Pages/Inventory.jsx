@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { InventoryItem } from "../Entities/all.js";
+import { InventoryItem } from "../src/services/entities.js";
+import { ApiError } from "../src/services/api.js";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import {
@@ -148,23 +149,59 @@ export default function InventoryPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("daysRemaining");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchInventory = async () => {
       setIsLoading(true);
-      const items = await InventoryItem.list();
-      const processedItems = items.map((item) => {
-        const daysRemaining = Math.floor(item.current_stock / item.daily_usage);
-        let status = "good";
-        if (daysRemaining <= 3) status = "critical";
-        else if (daysRemaining <= 7) status = "low";
-        return { ...item, daysRemaining, status };
-      });
-      setInventory(processedItems);
-      setIsLoading(false);
+      setError(null);
+      
+      try {
+        const items = await InventoryItem.list();
+        const processedItems = items.map((item) => {
+          const currentStock = item.current_stock || item.currentStock || 0;
+          const daysRemaining = Math.floor(currentStock / (item.daily_usage || 1));
+          let status = "good";
+          if (daysRemaining <= 3) status = "critical";
+          else if (daysRemaining <= 7) status = "low";
+          return { ...item, daysRemaining, status, current_stock: currentStock };
+        });
+        setInventory(processedItems);
+      } catch (err) {
+        console.error('Failed to fetch inventory:', err);
+        setError(err instanceof ApiError ? err.message : "Failed to load inventory data");
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchInventory();
   }, []);
+
+  const handleRetry = () => {
+    const fetchInventory = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const items = await InventoryItem.list();
+        const processedItems = items.map((item) => {
+          const currentStock = item.current_stock || item.currentStock || 0;
+          const daysRemaining = Math.floor(currentStock / (item.daily_usage || 1));
+          let status = "good";
+          if (daysRemaining <= 3) status = "critical";
+          else if (daysRemaining <= 7) status = "low";
+          return { ...item, daysRemaining, status, current_stock: currentStock };
+        });
+        setInventory(processedItems);
+      } catch (err) {
+        console.error('Failed to fetch inventory:', err);
+        setError(err instanceof ApiError ? err.message : "Failed to load inventory data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchInventory();
+  };
 
   useEffect(() => {
     let result = [...inventory];
@@ -195,6 +232,38 @@ export default function InventoryPage() {
   );
   const categories = [...new Set(inventory.map((i) => i.category))];
 
+  // Loading screen
+  if (isLoading && inventory.length === 0) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Inventory</h2>
+          <p className="text-gray-600">Fetching latest inventory data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error screen
+  if (error) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-full flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Inventory</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={handleRetry}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 bg-gray-50 min-h-full">
       {/* Header */}
@@ -210,6 +279,12 @@ export default function InventoryPage() {
             <p className="text-gray-500 mt-1">
               Last updated: {format(new Date(), "PPpp")}
             </p>
+            {isLoading && (
+              <div className="flex items-center gap-2 mt-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm text-blue-600">Refreshing inventory...</span>
+              </div>
+            )}
           </div>
           <div className="flex gap-4">
             <div className="text-center">
@@ -339,15 +414,24 @@ export default function InventoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {isLoading ? (
+                    {isLoading && inventory.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-12">
-                          Loading inventory...
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <span>Loading inventory data...</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredInventory.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-12 text-gray-500">
+                          No inventory items found matching your criteria.
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredInventory.map((item) => (
-                        <InventoryRow key={item.id} item={item} />
+                        <InventoryRow key={item.id || item.item_id} item={item} />
                       ))
                     )}
                   </TableBody>

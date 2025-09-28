@@ -1,277 +1,227 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Sun,
-  CloudRain,
-  Cloud,
-  Flame,
-  Snowflake,
-  Thermometer,
-  TrendingUp,
-  TrendingDown,
-  Wind,
-  Droplets,
-  Eye,
-} from "lucide-react";
-import { format } from "date-fns";
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { CloudSun, Sun, Cloud, CloudRain, Thermometer, Droplets, Wind } from 'lucide-react';
+import { InventoryItem } from "../src/services/entities.js";
+import { ApiError } from "../src/services/api.js";
 
-const weatherScenarios = [
-  {
-    id: "sunny",
-    name: "Sunny & Warm",
-    icon: "☀️",
-    temp: 75,
-    description: "Clear skies, perfect weather",
-    impacts: {
-      coldDrinks: +80,
-      hotDrinks: -30,
-      iceCream: +120,
-      pastries: +15,
-      outdoorSeating: +90,
-    },
-  },
-  {
-    id: "rainy",
-    name: "Rainy & Cold",
-    icon: "🌧️",
-    temp: 45,
-    description: "Heavy rain expected",
-    impacts: {
-      hotDrinks: +40,
-      coldDrinks: -60,
-      pastries: +25,
-      soup: +80,
-      comfortFood: +50,
-    },
-  },
-  {
-    id: "hot",
-    name: "Heat Wave",
-    icon: "🔥",
-    temp: 95,
-    description: "Extremely hot day",
-    impacts: {
-      coldDrinks: +150,
-      hotDrinks: -70,
-      iceCream: +200,
-      frozenTreats: +180,
-      heavyFood: -40,
-    },
-  },
-  {
-    id: "snow",
-    name: "Snow Storm",
-    icon: "❄️",
-    temp: 28,
-    description: "Heavy snow, stay indoors",
-    impacts: {
-      hotDrinks: +90,
-      coldDrinks: -80,
-      comfortFood: +120,
-      deliveries: +60,
-      footTraffic: -50,
-    },
-  },
-];
+const WeatherIcon = ({ condition, className = "w-8 h-8" }) => {
+  switch (condition) {
+    case 'sunny':
+      return <Sun className={`${className} text-yellow-500`} />;
+    case 'cloudy':
+      return <Cloud className={`${className} text-gray-500`} />;
+    case 'rainy':
+      return <CloudRain className={`${className} text-blue-500`} />;
+    default:
+      return <CloudSun className={`${className} text-blue-400`} />;
+  }
+};
 
-const forecastData = [
-  {
-    date: "Today",
-    icon: "☀️",
-    description: "Sunny",
-    temp: 72,
-    salesChange: +18,
-  },
-  {
-    date: "Tomorrow",
-    icon: "☁️",
-    description: "Cloudy",
-    temp: 68,
-    salesChange: +5,
-  },
-  {
-    date: "Fri, Jan 14",
-    icon: "🌧️",
-    description: "Light Rain",
-    temp: 62,
-    salesChange: -12,
-  },
-];
-
-const CurrentWeatherCard = () => (
-  <div className="bg-gradient-to-r from-blue-400 to-blue-600 rounded-xl p-6 text-white mb-6 shadow-lg">
-    <div className="flex items-center justify-between">
+const WeatherCard = ({ condition, title, description, impact, items }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="bg-white rounded-xl p-6 shadow-lg border border-gray-100"
+  >
+    <div className="flex items-center gap-4 mb-4">
+      <WeatherIcon condition={condition} className="w-12 h-12" />
       <div>
-        <h2 className="text-2xl font-bold">Today's Weather</h2>
-        <p className="opacity-90">Los Angeles, CA</p>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <p className="text-sm text-gray-600">{description}</p>
       </div>
-      <div className="text-right">
-        <div className="text-4xl font-bold">72°F</div>
-        <div className="flex items-center justify-end">
-          <Sun className="w-8 h-8 mr-2" />
-          <span>Sunny</span>
+    </div>
+    
+    <div className="space-y-3">
+      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <span className="text-sm font-medium text-gray-700">Demand Impact</span>
+        <span className={`text-sm font-bold ${impact > 0 ? 'text-green-600' : 'text-red-600'}`}>
+          {impact > 0 ? '+' : ''}{impact}%
+        </span>
+      </div>
+      
+      <div>
+        <p className="text-sm font-medium text-gray-700 mb-2">Affected Items</p>
+        <div className="space-y-1">
+          {items.slice(0, 3).map((item, index) => (
+            <div key={index} className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">{item.name}</span>
+              <span className="text-gray-500">{item.sensitivity}x</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
-    <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-      <div className="flex items-center gap-2">
-        <Droplets className="w-4 h-4" />
-        Humidity: 45%
-      </div>
-      <div className="flex items-center gap-2">
-        <Wind className="w-4 h-4" />
-        Wind: 8 mph
-      </div>
-      <div className="flex items-center gap-2">
-        <Eye className="w-4 h-4" />
-        UV Index: 7
-      </div>
-    </div>
-  </div>
+  </motion.div>
 );
 
-const WeatherImpactChart = ({ selectedWeather }) => {
-  const weather = weatherScenarios.find((w) => w.id === selectedWeather);
-  if (!weather) return null;
+export default function Weather() {
+  const [inventory, setInventory] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedWeather, setSelectedWeather] = useState('sunny');
 
-  const impactData = Object.entries(weather.impacts).map(
-    ([category, change]) => ({
-      category,
-      change,
-      baseline: 100, // Assuming a baseline
-      predicted: 100 + change,
-    })
-  );
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const items = await InventoryItem.list();
+        setInventory(items);
+      } catch (err) {
+        console.error('Failed to fetch inventory:', err);
+        setError(err instanceof ApiError ? err.message : "Failed to load data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  return (
-    <div className="space-y-6">
-      <h4 className="font-semibold text-lg">Predicted Demand Changes</h4>
-      {impactData.map((item) => (
-        <motion.div
-          key={item.category}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="space-y-2"
-        >
-          <div className="flex justify-between items-center">
-            <span className="font-medium">{item.category}</span>
-            <span
-              className={`font-bold ${
-                item.change > 0 ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {item.change > 0 ? "+" : ""}
-              {item.change}%
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-            <motion.div
-              className={`h-3 rounded-full ${
-                item.change > 0 ? "bg-green-500" : "bg-red-500"
-              }`}
-              initial={{ width: "0%" }}
-              animate={{ width: `${Math.min(100, Math.abs(item.change))}%` }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            />
-          </div>
-          <div className="text-sm text-gray-600">vs. Baseline</div>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
+    fetchData();
+  }, []);
 
-const WeatherSimulator = ({ selectedWeather, setSelectedWeather }) => {
-  return (
-    <Card className="bg-white rounded-xl shadow-elegant p-6 border-0">
-      <h3 className="text-xl font-bold mb-4">Weather Impact Simulator</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {weatherScenarios.map((weather) => (
-          <motion.button
-            key={weather.id}
-            onClick={() => setSelectedWeather(weather.id)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`p-4 rounded-lg border-2 text-center transition-all ${
-              selectedWeather === weather.id
-                ? "border-blue-500 bg-blue-50 shadow-md"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-          >
-            <div className="text-3xl mb-2">{weather.icon}</div>
-            <div className="font-semibold">{weather.name}</div>
-            <div className="text-sm text-gray-600">{weather.temp}°F</div>
-          </motion.button>
-        ))}
+  const weatherScenarios = {
+    sunny: {
+      title: 'Sunny Weather',
+      description: 'Clear skies and warm temperatures',
+      impact: 80,
+      items: inventory.filter(item => 
+        item.weather_sensitivity?.sunny && item.weather_sensitivity.sunny > 1
+      ).map(item => ({
+        name: item.name,
+        sensitivity: item.weather_sensitivity?.sunny?.toFixed(1) || '1.0'
+      }))
+    },
+    cloudy: {
+      title: 'Cloudy Weather', 
+      description: 'Overcast skies and mild temperatures',
+      impact: 20,
+      items: inventory.filter(item => 
+        item.weather_sensitivity?.cloudy && item.weather_sensitivity.cloudy > 1
+      ).map(item => ({
+        name: item.name,
+        sensitivity: item.weather_sensitivity?.cloudy?.toFixed(1) || '1.0'
+      }))
+    },
+    rainy: {
+      title: 'Rainy Weather',
+      description: 'Precipitation and cooler temperatures',
+      impact: 30,
+      items: inventory.filter(item => 
+        item.weather_sensitivity?.rainy && item.weather_sensitivity.rainy > 1
+      ).map(item => ({
+        name: item.name,
+        sensitivity: item.weather_sensitivity?.rainy?.toFixed(1) || '1.0'
+      }))
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Weather Data</h2>
+          <p className="text-gray-600">Analyzing weather impact on inventory...</p>
+        </div>
       </div>
-      <WeatherImpactChart selectedWeather={selectedWeather} />
-    </Card>
-  );
-};
+    );
+  }
 
-const ThreeDayForecast = () => (
-  <Card className="bg-white rounded-xl shadow-elegant p-6 border-0">
-    <h3 className="text-xl font-bold mb-4">3-Day Business Forecast</h3>
-    <div className="space-y-4">
-      {forecastData.map((day, index) => (
-        <motion.div
-          key={index}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-          className="flex items-center justify-between p-4 bg-gray-50/50 rounded-lg border border-gray-100"
-        >
-          <div className="flex items-center">
-            <div className="text-2xl mr-4">{day.icon}</div>
-            <div>
-              <div className="font-semibold">{day.date}</div>
-              <div className="text-sm text-gray-600">{day.description}</div>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="font-bold text-lg">{day.temp}°F</div>
-            <div
-              className={`text-sm font-semibold ${
-                day.salesChange > 0 ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              Sales: {day.salesChange > 0 ? "+" : ""}
-              {day.salesChange}%
-            </div>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  </Card>
-);
-
-export default function WeatherPage() {
-  const [selectedWeather, setSelectedWeather] = useState("sunny");
+  if (error) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-full flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <CloudSun className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Weather Data Unavailable</h2>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-full space-y-6">
+    <div className="p-6 bg-gray-50 min-h-full space-y-8">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
-        <h1 className="text-3xl font-bold text-gray-900">Weather Impact</h1>
-        <p className="text-gray-500 mt-1">
-          Simulate and predict weather's effect on your business
-        </p>
-      </motion.div>
-      <CurrentWeatherCard />
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <WeatherSimulator
-            selectedWeather={selectedWeather}
-            setSelectedWeather={setSelectedWeather}
-          />
-        </div>
         <div>
-          <ThreeDayForecast />
+          <h1 className="text-3xl font-bold text-gray-900">Weather Impact Analysis</h1>
+          <p className="text-gray-600 mt-1">
+            How weather conditions affect your inventory demand
+          </p>
         </div>
-      </div>
+        
+        <div className="flex gap-2">
+          {Object.keys(weatherScenarios).map((weather) => (
+            <button
+              key={weather}
+              onClick={() => setSelectedWeather(weather)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                selectedWeather === weather
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+              }`}
+            >
+              <WeatherIcon condition={weather} className="w-4 h-4" />
+              <span className="capitalize">{weather}</span>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Current Weather Analysis */}
+      <motion.div
+        key={selectedWeather}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <WeatherCard
+          condition={selectedWeather}
+          {...weatherScenarios[selectedWeather]}
+        />
+      </motion.div>
+
+      {/* Weather Impact Summary */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="grid md:grid-cols-3 gap-6"
+      >
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center gap-3 mb-4">
+            <Thermometer className="w-8 h-8 text-orange-500" />
+            <h3 className="font-semibold text-gray-900">Temperature Impact</h3>
+          </div>
+          <p className="text-gray-600 text-sm">
+            Hot weather increases cold beverage sales by 150% and ice cream by 200%
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center gap-3 mb-4">
+            <Droplets className="w-8 h-8 text-blue-500" />
+            <h3 className="font-semibold text-gray-900">Precipitation</h3>
+          </div>
+          <p className="text-gray-600 text-sm">
+            Rain increases coffee and hot beverage demand by 80%, pastry sales by 40%
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center gap-3 mb-4">
+            <Wind className="w-8 h-8 text-gray-500" />
+            <h3 className="font-semibold text-gray-900">Seasonal Trends</h3>
+          </div>
+          <p className="text-gray-600 text-sm">
+            Cloudy days see 30% increase in comfort food and warm drink sales
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }
