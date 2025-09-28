@@ -1,120 +1,285 @@
 {
   "success": true,
-  "timestamp": "2025-09-27T22:30:15.123456",
-  "summary": {
+  "timestamp": "2025-09-28T10:24:29.529500",
+  "summary": "Three high-priority alerts indicate low stock of Premium Coffee Beans, Whole Milk, and Vanilla Ice Cream, requiring immediate reordering. Capitalize on upcoming events like the Summer Music Festival and prepare special menu items to drive an estimated $31,500 in additional revenue. Overall, the system has identified significant profit impact opportunities and critical stock levels, suggesting proactive management is key to optimizing operations.",
+  "metrics": {
     "total_alerts": 6,
     "high_priority_alerts": 3,
     "total_recommendations": 7,
     "total_profit_impact": 32172.67
   },
+  "llm_features": {
+    "risk_analysis": {
+      "risk_level": "moderate",
+      "overall_assessment": "The restaurant faces moderate risk due to inventory shortages and supply chain issues, but increasing revenue and upcoming events present significant opportunities for growth.",
+      "top_risks": [
+        {
+          "risk": "Critical inventory shortages of Premium Coffee Beans, Whole Milk, and Vanilla Ice Cream.",
+          "impact": "operational",
+          "estimated_cost": 500,
+          "timeframe": "immediate",
+          "mitigation": "Expedite existing orders, source alternative suppliers immediately, and adjust menu offerings temporarily."
+        },
+        {
+          "risk": "Pending/delayed supply chain orders and overall supply chain reliability issues.",
+          "impact": "operational",
+          "estimated_cost": 750,
+          "timeframe": "1-2 weeks",
+          "mitigation": "Diversify suppliers, implement a buffer stock strategy for critical items, and proactively communicate with existing suppliers."
+        },
+        {
+          "risk": "Food waste incidents impacting profitability.",
+          "impact": "financial",
+          "estimated_cost": 56,
+          "timeframe": "immediate",
+          "mitigation": "Conduct a waste audit to identify root causes, optimize portion sizes, and improve inventory management practices. Implement FIFO (First In, First Out) practices."
+        }
+      ],
+      "opportunities": [
+        {
+          "opportunity": "Leverage upcoming Summer Music Festival and Local Marathon events to increase sales.",
+          "profit_potential": 2000,
+          "implementation": "Create event-specific menu items, extend operating hours, and implement targeted marketing campaigns.",
+          "timeline": "1 week"
+        },
+        {
+          "opportunity": "Optimize menu and pricing based on weather data to capitalize on demand.",
+          "profit_potential": 500,
+          "implementation": "Analyze weather data to predict demand for specific items (e.g., iced coffee on hot days) and adjust inventory and pricing accordingly.",
+          "timeline": "24-48 hours"
+        }
+      ],
+      "operational_insights": [
+        {
+          "insight": "Low stock levels of key ingredients could lead to customer dissatisfaction.",
+          "action": "Prioritize restocking critical items and communicate any potential shortages to customers transparently.",
+          "impact": "Improved customer satisfaction and reduced order cancellations."
+        },
+        {
+          "insight": "Increasing revenue trend suggests positive market reception and growth potential.",
+          "action": "Analyze sales data to identify best-selling items and customer preferences to inform future menu development and marketing strategies.",
+          "impact": "Increased revenue and market share."
+        }
+      ],
+      "key_patterns": [
+        "Inventory management needs immediate improvement to prevent stockouts.",
+        "Proactive supply chain management is crucial for consistent operations."
+      ]
+    },
+    "menu_optimization": {
+      "overall_strategy": "Optimize the menu by reducing waste, capitalizing on upcoming events, and addressing inventory shortages with creative and profitable menu additions.",
+      "total_estimated_impact": 2500,
+      "implementation_timeline": "24-48 hours",
+      "menu_suggestions": [
+        {
+          "item_name": "Marathon Morning Milkshake",
+          "strategy_type": "event_special",
+          "description": "A protein-rich milkshake designed for pre- or post-marathon energy, using whole milk and a scoop of vanilla ice cream.",
+          "key_ingredients": [
+            "Whole Milk",
+            "Vanilla Ice Cream",
+            "Protein Powder",
+            "Banana"
+          ],
+          "profit_potential": 600,
+          "cost_to_make": 4,
+          "suggested_price": 9,
+          "margin_percent": 55,
+          "implementation": {
+            "prep_time": "5 minutes",
+            "skill_level": "basic",
+            "equipment_needed": ["blender", "measuring cups"],
+            "timing": "immediate"
+          },
+          "target_audience": "event attendees",
+          "marketing_angle": "Fuel your run! Get a Marathon Morning Milkshake for sustained energy."
+        },
+        {
+          "item_name": "Coffee Bean Energy Bites",
+          "strategy_type": "profit_maximization",
+          "description": "Small energy bites made with premium coffee beans, oats, and dried fruit, appealing to customers seeking a quick energy boost.",
+          "key_ingredients": [
+            "Premium Coffee Beans",
+            "Oats",
+            "Dried Cranberries",
+            "Honey",
+            "Coconut Flakes"
+          ],
+          "profit_potential": 400,
+          "cost_to_make": 2.5,
+          "suggested_price": 6,
+          "margin_percent": 58,
+          "implementation": {
+            "prep_time": "20 minutes",
+            "skill_level": "basic",
+            "equipment_needed": ["mixing bowls", "baking sheet"],
+            "timing": "24 hours"
+          },
+          "target_audience": "regular customers",
+          "marketing_angle": "The perfect pick-me-up! Try our Coffee Bean Energy Bites for a delicious boost."
+        },
+        {
+          "item_name": "Croissant Bread Pudding",
+          "strategy_type": "waste_reduction",
+          "description": "Utilize day-old croissants to create a delicious bread pudding with a creamy custard base.",
+          "key_ingredients": [
+            "Pastries_Croissant",
+            "Milk_whole",
+            "Eggs",
+            "Sugar",
+            "Vanilla Extract"
+          ],
+          "profit_potential": 700,
+          "cost_to_make": 5,
+          "suggested_price": 10,
+          "margin_percent": 50,
+          "implementation": {
+            "prep_time": "30 minutes",
+            "skill_level": "intermediate",
+            "equipment_needed": ["oven", "baking dish", "mixing bowls"],
+            "timing": "immediate"
+          },
+          "target_audience": "regular customers",
+          "marketing_angle": "Reduce waste, increase flavor! Try our delicious Croissant Bread Pudding."
+        },
+        {
+          "item_name": "Vanilla Bean Affogato",
+          "strategy_type": "seasonal",
+          "description": "A simple yet elegant dessert featuring a shot of espresso poured over a scoop of vanilla ice cream.",
+          "key_ingredients": [
+            "Vanilla Ice Cream",
+            "Espresso",
+            "Premium Coffee Beans"
+          ],
+          "profit_potential": 800,
+          "cost_to_make": 3,
+          "suggested_price": 7,
+          "margin_percent": 57,
+          "implementation": {
+            "prep_time": "5 minutes",
+            "skill_level": "basic",
+            "equipment_needed": ["espresso machine", "ice cream scoop"],
+            "timing": "immediate"
+          },
+          "target_audience": "weather-specific",
+          "marketing_angle": "The perfect transition treat. Enjoy our Vanilla Bean Affogato"
+        }
+      ],
+      "operational_benefits": [
+        {
+          "benefit": "Reduced food waste",
+          "impact": "Decreased waste disposal costs by 10%"
+        },
+        {
+          "benefit": "Increased customer satisfaction",
+          "impact": "Positive feedback from new menu items during events"
+        }
+      ],
+      "waste_reduction_impact": {
+        "items_utilized": ["milk_whole", "pastries_croissant"],
+        "estimated_savings": 300
+      }
+    }
+  },
   "alerts": [
     {
       "id": 1,
       "type": "low_stock",
-      "title": "Low Inventory Alert",
       "message": "Low stock: Premium Coffee Beans (8.0 units remaining)",
-      "priority": "medium",
-      "category": "inventory",
-      "timestamp": "2025-09-27T22:30:15.123456",
-      "actionable": true
+      "priority": "Priority.MEDIUM",
+      "category": "RecommendationCategory.INVENTORY"
     },
     {
       "id": 2,
-      "type": "upcoming_event",
-      "title": "Event Planning Alert",
-      "message": "Major event in 3 days: Summer Music Festival (2500 expected)",
-      "priority": "high",
-      "category": "demand",
-      "timestamp": "2025-09-27T22:30:15.123456",
-      "actionable": true
+      "type": "low_stock",
+      "message": "Low stock: Whole Milk (5.0 units remaining)",
+      "priority": "Priority.MEDIUM",
+      "category": "RecommendationCategory.INVENTORY"
     },
     {
       "id": 3,
+      "type": "low_stock",
+      "message": "Low stock: Vanilla Ice Cream (2.0 units remaining)",
+      "priority": "Priority.MEDIUM",
+      "category": "RecommendationCategory.INVENTORY"
+    },
+    {
+      "id": 4,
+      "type": "upcoming_event",
+      "message": "Major event in 3 days: Summer Music Festival (2500 expected)",
+      "priority": "Priority.HIGH",
+      "category": "RecommendationCategory.DEMAND"
+    },
+    {
+      "id": 5,
       "type": "delayed_orders",
-      "title": "Supply Chain Issue",
       "message": "1 delayed orders worth $89.90",
-      "priority": "high",
-      "category": "orders",
-      "timestamp": "2025-09-27T22:30:15.123456",
-      "actionable": true
+      "priority": "Priority.HIGH",
+      "category": "RecommendationCategory.ORDERS"
+    },
+    {
+      "id": 6,
+      "type": "overdue_orders",
+      "message": "1 overdue orders worth $52.35",
+      "priority": "Priority.HIGH",
+      "category": "RecommendationCategory.ORDERS"
     }
   ],
   "recommendations": [
     {
       "id": 1,
-      "title": "Event Preparation",
-      "description": "Increase inventory by 250% for Summer Music Festival",
-      "confidence": 85.0,
-      "profit_impact": 22500.0,
-      "priority": "high",
-      "estimated_implementation": "3-5 days",
-      "tags": ["events", "high-impact", "demand"]
+      "description": "Reorder Premium Coffee Beans immediately or source from alternative supplier",
+      "confidence": 79.1,
+      "profit_impact": 437.32,
+      "explanation": "You need to reorder premium coffee beans ASAP or find another supplier; a 79% chance we'll lose $437 in profit if we run out and upcoming events will suffer, hurting your bottom line. Act now to prevent a coffee shortage and protect profits!"
     },
     {
       "id": 2,
-      "title": "Inventory Reorder",
-      "description": "Reorder Premium Coffee Beans immediately or source from alternative supplier",
-      "confidence": 89.2,
-      "profit_impact": 437.32,
-      "priority": "medium",
-      "estimated_implementation": "1-2 days",
-      "tags": ["inventory", "supply-chain"]
+      "description": "Reorder Whole Milk immediately or source from alternative supplier",
+      "confidence": 87,
+      "profit_impact": 102.61,
+      "explanation": "Acting on the milk reorder is crucial now because running out, especially with upcoming events, will frustrate customers and force you to turn away profitable orders. Failing to reorder immediately or find a new supplier risks losing $103 in profit, damaging customer satisfaction, and impacting your reputation."
     },
     {
       "id": 3,
-      "title": "Supply Chain",
+      "description": "Reorder Vanilla Ice Cream immediately or source from alternative supplier",
+      "confidence": 79.6,
+      "profit_impact": 113.27,
+      "explanation": "Given upcoming events, immediately reordering vanilla ice cream or finding a backup supplier is critical to meet demand. Failing to do so risks menu shortages and lost sales, directly impacting your bottom line by an estimated $113 in potential profit."
+    },
+    {
+      "id": 4,
+      "description": "Increase inventory by 100% for Summer Music Festival",
+      "confidence": 85,
+      "profit_impact": 22500,
+      "explanation": "The Summer Music Festival is a prime opportunity to capitalize on increased foot traffic and demand; failing to double inventory now could leave you unable to meet customer needs, resulting in lost sales and a missed $22,500 profit boost."
+    },
+    {
+      "id": 5,
+      "description": "Prepare special menu items and increase beverage stock",
+      "confidence": 85,
+      "profit_impact": 9000,
+      "explanation": "Preparing special menu items and increasing beverage stock is critical to capitalize on upcoming events and potentially unknown seasonal demand, and failing to do so risks lost revenue and customer dissatisfaction, ultimately impacting your profit by an estimated $9000. Act now to ensure you're ready to meet increased demand and maximize earnings."
+    },
+    {
+      "id": 6,
       "description": "Contact suppliers for delayed orders and find alternative sources",
-      "confidence": 85.0,
+      "confidence": 85,
       "profit_impact": 8.99,
-      "priority": "high",
-      "estimated_implementation": "immediate",
-      "tags": ["supply-chain", "urgent"]
+      "explanation": "Delayed supplies threaten your ability to fulfill upcoming event orders and maintain regular service. Failing to address this now could lead to menu shortages and customer dissatisfaction, ultimately costing you an estimated $9 in lost profit potential."
+    },
+    {
+      "id": 7,
+      "description": "Immediate follow-up on overdue deliveries and emergency sourcing",
+      "confidence": 90,
+      "profit_impact": 10.47,
+      "explanation": "Ensuring immediate follow-up on overdue deliveries and sourcing alternatives is crucial right now to prevent menu disruptions with upcoming events. Failing to act risks disappointing customers and damaging your reputation, ultimately costing you at least $10 in potential lost sales and requiring recovery efforts."
     }
-  ],
-  "categories": {
-    "inventory": {
-      "alerts_count": 3,
-      "low_stock_items": 3,
-      "total_items": 5
-    },
-    "food_waste": {
-      "alerts_count": 0,
-      "total_cost_impact": 56.23,
-      "waste_records": 15
-    },
-    "weather": {
-      "alerts_count": 0,
-      "current_condition": "sunny",
-      "temperature": 72.0
-    },
-    "events": {
-      "alerts_count": 1,
-      "upcoming_events": 3,
-      "total_expected_attendance": 3600
-    },
-    "sales": {
-      "alerts_count": 0,
-      "recent_sales": 46,
-      "total_revenue": 2847.65
-    },
-    "orders": {
-      "alerts_count": 2,
-      "pending_orders": 3,
-      "total_order_value": 641.05
-    }
-  },
-  "insights": [
-    "3 critical issues require immediate attention",
-    "$32,173 in potential profit improvements identified",
-    "$56 in food waste this week - prevention opportunities available",
-    "3 upcoming events with 3,600 expected attendees",
-    "Supply chain delays detected - alternative sourcing recommended"
   ],
   "data_overview": {
     "low_stock_items": 3,
     "recent_waste_records": 15,
     "upcoming_events": 3,
-    "pending_orders": 3,
-    "last_updated": "2025-09-27T22:30:15.123456"
+    "pending_orders": 3
   }
 }
