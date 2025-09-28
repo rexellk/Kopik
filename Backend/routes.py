@@ -430,7 +430,7 @@ def get_intelligence_dashboard():
                 for i, solution in enumerate(all_solutions[:10])  # Limit to top 10
             ],
             "data_overview": data_overview
-       }
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Intelligence analysis failed: {str(e)}")
