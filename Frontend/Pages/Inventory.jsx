@@ -299,7 +299,14 @@ export default function Inventory() {
                 dir={sortBy.dir}
                 onClick={toggleSort}
               />
-              <th className="p-3 text-right pr-4">ID</th>
+              <SortableTh
+                label="Quantity"
+                activeKey={sortBy.key}
+                myKey="qty"
+                dir={sortBy.dir}
+                onClick={toggleSort}
+              />
+              <th className="p-3 text-right">ID</th>
             </tr>
           </thead>
           <tbody>
@@ -316,6 +323,7 @@ export default function Inventory() {
                   </td>
                   <td className="p-3 font-medium text-gray-900">{it.title}</td>
                   <td className="p-3">{it.category}</td>
+                  <td className="p-3">{it.qty} {it.unit}</td>
                   <td className="p-3 text-right pr-4 text-gray-500">
                     {it.id}
                   </td>
