@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DataContext } from "../src/context/DataContext";
-import AddProductForm from "../components/AddProductForm";
+import AddProductForm from "../Components/AddProductForm";
 import { inventoryAPI } from "../src/services/api";
 
 const DEFAULT_THRESHOLD = 0.25;
