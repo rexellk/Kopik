@@ -7,37 +7,40 @@ import Inventory from '../Pages/Inventory'
 import Weather from '../Pages/Weather'
 import Analytics from '../Pages/Analytics'
 import './index.css'
+import { DataProvider } from './context/DataContext.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Router>
-      <Routes>
-        <Route path="/" element={
-          <Layout currentPageName="Dashboard">
-            <Dashboard />
-          </Layout>
-        } />
-        <Route path="/dashboard" element={
-          <Layout currentPageName="Dashboard">
-            <Dashboard />
-          </Layout>
-        } />
-        <Route path="/inventory" element={
-          <Layout currentPageName="Inventory">
-            <Inventory />
-          </Layout>
-        } />
-        <Route path="/weather" element={
-          <Layout currentPageName="Weather">
-            <Weather />
-          </Layout>
-        } />
-        <Route path="/analytics" element={
-          <Layout currentPageName="Analytics">
-            <Analytics />
-          </Layout>
-        } />
-      </Routes>
-    </Router>
+    <DataProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={
+            <Layout currentPageName="Dashboard">
+              <Dashboard />
+            </Layout>
+          } />
+          <Route path="/dashboard" element={
+            <Layout currentPageName="Dashboard">
+              <Dashboard />
+            </Layout>
+          } />
+          <Route path="/inventory" element={
+            <Layout currentPageName="Inventory">
+              <Inventory />
+            </Layout>
+          } />
+          <Route path="/weather" element={
+            <Layout currentPageName="Weather">
+              <Weather />
+            </Layout>
+          } />
+          <Route path="/analytics" element={
+            <Layout currentPageName="Analytics">
+              <Analytics />
+            </Layout>
+          } />
+        </Routes>
+      </Router>
+    </DataProvider>
   </React.StrictMode>,
 )

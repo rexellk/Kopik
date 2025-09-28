@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -12,149 +13,9 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-/**
- * Hard-coded café inventory
- * qty = current stock; total = par level; unit = display unit (kg, L, pcs)
- * thresholdPct is used for low-stock detection (defaults to 0.25 if omitted)
- */
-const INITIAL_ITEMS = [
-  {
-    sku: "ING-001",
-    name: "All-Purpose Flour",
-    category: "Baking",
-    unit: "kg",
-    qty: 8,
-    total: 40,
-    cost: 1.2,
-  },
-  {
-    sku: "ING-002",
-    name: "Granulated Sugar",
-    category: "Baking",
-    unit: "kg",
-    qty: 5,
-    total: 30,
-    cost: 1.1,
-  },
-  {
-    sku: "ING-003",
-    name: "Unsalted Butter",
-    category: "Dairy",
-    unit: "kg",
-    qty: 3,
-    total: 12,
-    cost: 4.0,
-  },
-  {
-    sku: "ING-004",
-    name: "Whole Milk",
-    category: "Dairy",
-    unit: "L",
-    qty: 18,
-    total: 40,
-    cost: 0.9,
-  },
-  {
-    sku: "ING-005",
-    name: "Fresh Eggs",
-    category: "Dairy",
-    unit: "pcs",
-    qty: 90,
-    total: 240,
-    cost: 0.2,
-  },
-  {
-    sku: "ING-006",
-    name: "Coffee Beans – Espresso",
-    category: "Coffee & Tea",
-    unit: "kg",
-    qty: 6,
-    total: 20,
-    cost: 9.5,
-  },
-  {
-    sku: "ING-007",
-    name: "Coffee Beans – House Blend",
-    category: "Coffee & Tea",
-    unit: "kg",
-    qty: 10,
-    total: 25,
-    cost: 8.8,
-  },
-  {
-    sku: "ING-008",
-    name: "Matcha Powder",
-    category: "Coffee & Tea",
-    unit: "kg",
-    qty: 1,
-    total: 6,
-    cost: 22.0,
-  },
-  {
-    sku: "ING-009",
-    name: "Black Tea Leaves",
-    category: "Coffee & Tea",
-    unit: "kg",
-    qty: 2,
-    total: 10,
-    cost: 12.0,
-  },
-  {
-    sku: "ING-010",
-    name: "Cocoa Powder",
-    category: "Baking",
-    unit: "kg",
-    qty: 2,
-    total: 10,
-    cost: 6.0,
-  },
-  {
-    sku: "ING-011",
-    name: "Vanilla Syrup",
-    category: "Syrups",
-    unit: "L",
-    qty: 3,
-    total: 12,
-    cost: 7.0,
-  },
-  {
-    sku: "ING-012",
-    name: "Caramel Syrup",
-    category: "Syrups",
-    unit: "L",
-    qty: 2,
-    total: 12,
-    cost: 7.0,
-  },
-  {
-    sku: "ING-013",
-    name: "Chocolate Syrup",
-    category: "Syrups",
-    unit: "L",
-    qty: 2,
-    total: 12,
-    cost: 6.5,
-  },
-  {
-    sku: "ING-014",
-    name: "Strawberries (Fresh)",
-    category: "Produce",
-    unit: "kg",
-    qty: 1,
-    total: 8,
-    cost: 5.0,
-  },
-  {
-    sku: "ING-015",
-    name: "Fresh Bananas",
-    category: "Produce",
-    unit: "kg",
-    qty: 1,
-    total: 10,
-    cost: 2.0,
-  },
-];
+import { DataContext } from "../src/context/DataContext";
+import AddProductForm from "../Components/AddProductForm";
+import { inventoryAPI } from "../src/services/api";
 
 const DEFAULT_THRESHOLD = 0.25;
 
@@ -164,17 +25,42 @@ function ratio(item) {
 }
 
 function dotJoin(arr, max = 6) {
-  const names = arr.map((x) => x.name);
+  const names = arr.map((x) => x.title);
   if (names.length <= max) return names.join(" • ");
   return names.slice(0, max).join(" • ") + "…";
 }
 
 export default function Inventory() {
-  const [items, setItems] = useState(INITIAL_ITEMS);
+  const { data, loading, error, refetchData } = useContext(DataContext);
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [sortBy, setSortBy] = useState({ key: "name", dir: "asc" }); // key in ["name","category","unit","qty","total","stockPct","cost"]
   const [selected, setSelected] = useState(() => new Set());
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading data.</div>;
+  }
+
+  // Map backend inventory structure to frontend expected structure
+  const items = (data.inventory || []).map(item => ({
+    id: item.id,
+    title: item.name, // Backend uses 'name', frontend expects 'title'
+    category: item.category,
+    qty: item.current_stock, // Backend uses 'current_stock', frontend expects 'qty'
+    total: item.reorder_point, // Backend uses 'reorder_point', frontend expects 'total'
+    unit: item.unit,
+    cost: item.cost_per_unit,
+    supplier: item.supplier,
+    sku: item.sku,
+    // Keep original item for additional data
+    ...item
+  }));
 
   const categories = useMemo(() => {
     const set = new Set(items.map((i) => i.category));
@@ -183,7 +69,7 @@ export default function Inventory() {
 
   const lowStock = useMemo(() => {
     return items.filter(
-      (it) => ratio(it) <= (it.thresholdPct ?? DEFAULT_THRESHOLD)
+      (it) => it.type === 'low_stock'
     );
   }, [items]);
 
@@ -193,9 +79,8 @@ export default function Inventory() {
       const okCat = category === "All" || i.category === category;
       const okText =
         !q ||
-        i.name.toLowerCase().includes(q) ||
-        i.category.toLowerCase().includes(q) ||
-        i.sku.toLowerCase().includes(q);
+        i.title.toLowerCase().includes(q) ||
+        i.category.toLowerCase().includes(q);
       return okCat && okText;
     });
   }, [items, category, query]);
@@ -225,7 +110,7 @@ export default function Inventory() {
       if (av < bv) return -1 * dirMul;
       if (av > bv) return 1 * dirMul;
       // Stable secondary sort by name
-      return String(a.name).localeCompare(String(b.name)) * dirMul;
+      return String(a.title).localeCompare(String(b.title)) * dirMul;
     });
     return arr;
   }, [filtered, sortBy]);
@@ -241,94 +126,194 @@ export default function Inventory() {
 
   function toggleAll(checked) {
     if (checked) {
-      setSelected(new Set(sorted.map((i) => i.sku)));
+      setSelected(new Set(sorted.map((i) => i.id)));
     } else {
       setSelected(new Set());
     }
   }
 
-  function toggleOne(sku) {
+  function toggleOne(id) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(sku)) next.delete(sku);
-      else next.add(sku);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
-  function handleDelete() {
-    if (selected.size === 0) return;
-    setItems((prev) => prev.filter((it) => !selected.has(it.sku)));
-    setSelected(new Set());
+  async function triggerIntelligenceAnalysis() {
+    try {
+      console.log('🤖 Triggering AI analysis...');
+      const response = await fetch('http://localhost:8000/api/intelligence/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ AI analysis completed:', result.message);
+        // Wait a moment for the analysis to be processed
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    } catch (error) {
+      console.warn('Failed to trigger intelligence analysis:', error);
+    }
+  }
+
+  async function handleDelete() {
+    if (selected.size === 0) {
+      alert("Please select items to delete.");
+      return;
+    }
+
+    const selectedItems = Array.from(selected);
+    const itemNames = selectedItems.map(id => {
+      const item = items.find(i => i.id === id);
+      return item ? item.title : `ID: ${id}`;
+    });
+
+    const confirmMessage = `Are you sure you want to delete ${selectedItems.length} item(s)?\n\n${itemNames.join('\n')}\n\nThis action cannot be undone.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      // Delete each selected item
+      const deletePromises = selectedItems.map(id => {
+        const item = items.find(i => i.id === id);
+        if (item && item.item_id) {
+          return inventoryAPI.delete(item.item_id);
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(deletePromises);
+      
+      // Clear selection
+      setSelected(new Set());
+      
+      // Trigger AI analysis after deletion
+      await triggerIntelligenceAnalysis();
+      
+      // Refresh data
+      if (refetchData) {
+        await refetchData();
+      }
+      
+      alert(`Successfully deleted ${selectedItems.length} item(s).`);
+      
+      // Redirect to dashboard and reload to ensure fresh data
+      navigate('/dashboard');
+      window.location.reload();
+    } catch (error) {
+      alert(`Failed to delete items: ${error.message}`);
+    }
   }
 
   function handleAdd() {
-    // Minimal stub for now; you can wire this to a modal/form later.
-    const idx = items.length + 1;
-    const newItem = {
-      sku: `ING-${String(idx).padStart(3, "0")}`,
-      name: `New Ingredient ${idx}`,
-      category: "Misc",
-      unit: "pcs",
-      qty: 0,
-      total: 10,
-      cost: 0,
-    };
-    setItems((p) => [newItem, ...p]);
+    setShowAddForm(true);
+  }
+
+  async function handleAddProduct(productData) {
+    try {
+      await inventoryAPI.create(productData);
+      
+      // Trigger AI analysis after adding product
+      await triggerIntelligenceAnalysis();
+      
+      // Refresh the data to show the new product
+      if (refetchData) {
+        await refetchData();
+      }
+    } catch (error) {
+      throw new Error(error.message || "Failed to add product");
+    }
   }
 
   const allChecked =
-    sorted.length > 0 && sorted.every((i) => selected.has(i.sku));
+    sorted.length > 0 && sorted.every((i) => selected.has(i.id));
   const someChecked = selected.size > 0 && !allChecked;
+
+
+  // Get alerts from React context (from /api/intelligence/dashboard)
+  const sampleAlerts = data?.alerts ? data.alerts.slice(0, 3) : [];
+
+  // Map priority to colors
+  const getPriorityColor = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case 'high':
+        return {
+          bg: 'bg-red-50',
+          border: 'border-red-200',
+          text: 'text-red-700',
+          icon: 'text-red-600'
+        };
+      case 'medium':
+        return {
+          bg: 'bg-white',
+          border: 'border-yellow-200',
+          text: 'text-yellow-700',
+          icon: 'text-yellow-600'
+        };
+      default:
+        return {
+          bg: 'bg-blue-50',
+          border: 'border-blue-200',
+          text: 'text-blue-700',
+          icon: 'text-blue-600'
+        };
+    }
+  };
 
   return (
     <div className="mx-auto max-w-7xl p-6 md:p-8">
-      {/* --- AI Insight (Alert style, middle-aligned header row) --- */}
-      <Card
-        className={
-          lowStock.length > 0
-            ? "rounded-2xl mb-6 bg-red-50 border border-red-200 shadow-none"
-            : "rounded-2xl mb-6 bg-green-50 border border-green-200 shadow-none"
-        }
-      >
-        <CardContent className="py-4 px-5">
-          <div className="flex min-h-[48px] items-center gap-2">
-            {lowStock.length > 0 ? (
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            ) : (
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-            )}
-            <p
-              className={
-                "text-sm sm:text-base font-semibold " +
-                (lowStock.length > 0 ? "text-red-700" : "text-green-700")
-              }
-            >
-              {lowStock.length > 0
-                ? `${lowStock.length} item${
-                    lowStock.length > 1 ? "s" : ""
-                  } need immediate attention`
-                : "All good — no items below 25% stock"}
-            </p>
-          </div>
-
-          <p
-            className={
-              "mt-2 text-sm sm:text-base " +
-              (lowStock.length > 0 ? "text-red-700" : "text-green-800")
-            }
-          >
-            {lowStock.length > 0 ? (
-              <>{dotJoin(lowStock, 6)}. Contact suppliers now.</>
-            ) : (
-              <>
-                All categories are healthy. Recheck after today’s service
-                window.
-              </>
-            )}
-          </p>
-        </CardContent>
-      </Card>
+      {/* --- Alert Boxes from Sample Data --- */}
+      <div className="space-y-4 mb-6">
+        {sampleAlerts.length > 0 ? (
+          sampleAlerts.map((alert) => {
+            const colors = getPriorityColor(alert.priority);
+            return (
+              <Card
+                key={alert.id}
+                className={`rounded-2xl ${colors.bg} ${colors.border} shadow-none`}
+              >
+                <CardContent className="py-6 px-6">
+                  <div className="flex items-center gap-4">
+                    <AlertTriangle className={`w-6 h-6 ${colors.icon} flex-shrink-0`} />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-base pt-5 font-semibold ${colors.text} mb-1`}>
+                        {alert.title || alert.name || 'Alert'}
+                      </p>
+                      <p className={`text-sm ${colors.text}`}>
+                        {alert.message || alert.summary || 'No message'}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 pt-5 ">
+                      <span className={`inline-flex items-center px-3 py-2 rounded-full text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}>
+                        {(alert.priority || 'medium')?.toUpperCase()} PRIORITY
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          <Card className="rounded-2xl bg-gray-50 border border-gray-200 shadow-none">
+            <CardContent className="py-4 px-5">
+              <div className="flex min-h-[48px] items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-gray-600" />
+                <p className="text-sm sm:text-base font-semibold text-gray-700">
+                  N/A
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* --- Top Bar: actions & filters --- */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -340,10 +325,11 @@ export default function Inventory() {
           <Button
             variant="destructive"
             onClick={handleDelete}
+            disabled={selected.size === 0}
             className="rounded-xl"
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete
+            Delete {selected.size > 0 ? `(${selected.size})` : ''}
           </Button>
         </div>
 
@@ -392,7 +378,7 @@ export default function Inventory() {
               <SortableTh
                 label="Name"
                 activeKey={sortBy.key}
-                myKey="name"
+                myKey="title"
                 dir={sortBy.dir}
                 onClick={toggleSort}
               />
@@ -404,79 +390,32 @@ export default function Inventory() {
                 onClick={toggleSort}
               />
               <SortableTh
-                label="Unit"
-                activeKey={sortBy.key}
-                myKey="unit"
-                dir={sortBy.dir}
-                onClick={toggleSort}
-              />
-              <SortableTh
-                label="Qty"
+                label="Quantity"
                 activeKey={sortBy.key}
                 myKey="qty"
                 dir={sortBy.dir}
                 onClick={toggleSort}
               />
-              <SortableTh
-                label="Par (Total)"
-                activeKey={sortBy.key}
-                myKey="total"
-                dir={sortBy.dir}
-                onClick={toggleSort}
-              />
-              <SortableTh
-                label="Stock %"
-                activeKey={sortBy.key}
-                myKey="stockPct"
-                dir={sortBy.dir}
-                onClick={toggleSort}
-              />
-              <SortableTh
-                label="Cost (est.)"
-                activeKey={sortBy.key}
-                myKey="cost"
-                dir={sortBy.dir}
-                onClick={toggleSort}
-              />
-              <th className="p-3 text-right pr-4">SKU</th>
+              <th className="p-3 text-right">ID</th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((it) => {
-              const pct = ratio(it);
-              const pctText = (pct * 100).toFixed(0) + "%";
-              const low = pct <= (it.thresholdPct ?? DEFAULT_THRESHOLD);
-
               return (
-                <tr key={it.sku} className="border-t">
+                <tr key={it.id} className="border-t">
                   <td className="p-3">
                     <input
-                      aria-label={`Select ${it.name}`}
+                      aria-label={`Select ${it.title}`}
                       type="checkbox"
-                      checked={selected.has(it.sku)}
-                      onChange={() => toggleOne(it.sku)}
+                      checked={selected.has(it.id)}
+                      onChange={() => toggleOne(it.id)}
                     />
                   </td>
-                  <td className="p-3 font-medium text-gray-900">{it.name}</td>
+                  <td className="p-3 font-medium text-gray-900">{it.title}</td>
                   <td className="p-3">{it.category}</td>
-                  <td className="p-3">{it.unit}</td>
-                  <td className="p-3">{it.qty}</td>
-                  <td className="p-3">{it.total}</td>
-                  <td className="p-3">
-                    <span
-                      className={
-                        "inline-flex items-center gap-2 px-2 py-1 rounded-full " +
-                        (low
-                          ? "bg-red-50 text-red-700 border border-red-200"
-                          : "bg-emerald-50 text-emerald-700 border border-emerald-200")
-                      }
-                    >
-                      <span className="font-semibold">{pctText}</span>
-                    </span>
-                  </td>
-                  <td className="p-3">${Number(it.cost).toFixed(2)}</td>
+                  <td className="p-3">{it.qty} {it.unit}</td>
                   <td className="p-3 text-right pr-4 text-gray-500">
-                    {it.sku}
+                    {it.id}
                   </td>
                 </tr>
               );
@@ -492,6 +431,13 @@ export default function Inventory() {
           </tbody>
         </table>
       </div>
+
+      {/* Add Product Form Modal */}
+      <AddProductForm
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSubmit={handleAddProduct}
+      />
     </div>
   );
 }

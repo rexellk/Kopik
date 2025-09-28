@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useContext, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -24,16 +24,11 @@ import {
 import { DollarSign, TrendingDown, TrendingUp, RotateCcw } from "lucide-react";
 
 // Keep: Weather impact simulator & Intelligence hub (existing components)
-import WeatherPanel from "../components/dashboard/WeatherPanel";
-import IntelligenceFeed from "../components/dashboard/IntelligenceFeed";
-import AIRecommendations from "../components/dashboard/AIRecommendations";
+import WeatherPanel from "../Components/dashboard/WeatherPanel";
+import IntelligenceFeed from "../Components/dashboard/IntelligenceFeed";
+import AIRecommendations from "../Components/dashboard/AIRecommendations";
 
-// Minimal entities to load inventory + AI data
-import {
-  InventoryItem,
-  Recommendation,
-  IntelligenceSignal,
-} from "@entities/all";
+import { DataContext } from "../src/context/DataContext";
 
 // ---------- Stub data taken & adapted from Analytics ---------- //
 const salesTrendData = [
@@ -154,12 +149,8 @@ const MetricCard = ({ title, value, change, timeframe, icon: Icon, color }) => (
 );
 
 export default function UnifiedDashboard() {
-  // From Dashboard: critical items + recommendations + intelligence
-  const [inventoryData, setInventoryData] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
-  const [intelligenceSignals, setIntelligenceSignals] = useState([]);
+  const { data, loading, error } = useContext(DataContext);
   const [selectedWeather, setSelectedWeather] = useState("cloudy");
-  const [isLoading, setIsLoading] = useState(true);
 
   // Weather impact descriptors used below the simulator
   const weatherImpact = {
@@ -180,137 +171,15 @@ export default function UnifiedDashboard() {
     },
   };
 
-  // Load base data
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [inventory, recs, signals] = await Promise.all([
-          InventoryItem.list(),
-          Recommendation.list(),
-          IntelligenceSignal.list(),
-        ]);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-        const updatedInventory = (inventory || []).map((item) => {
-          const daily_usage = item?.daily_usage || 1;
-          const daysLeft = (item?.currentStock || 0) / daily_usage;
-          let status = "good";
-          if (daysLeft <= 2) status = "critical";
-          else if (daysLeft <= 5) status = "low";
-          return { ...item, daysLeft, status };
-        });
+  if (error) {
+    return <div>Error loading data.</div>;
+  }
 
-        setInventoryData(updatedInventory);
-        setRecommendations(recs || []);
-
-        // Prefer JSON file if present; fall back to entities class list
-        try {
-          const json = await import("@entities/IntelligenceSignal.json");
-          const payload = json?.default || json;
-          if (payload && Array.isArray(payload)) {
-            setIntelligenceSignals(payload);
-          } else {
-            setIntelligenceSignals(signals || []);
-          }
-        } catch (e) {
-          setIntelligenceSignals(signals || []);
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load();
-  }, []);
-
-  // Dynamic AI recs influenced by weather + signals
-  const generateDynamicRecs = useCallback(() => {
-    const newRecs = [];
-
-    if (
-      intelligenceSignals.some((s) => s.name === "Taylor Swift Concert") &&
-      selectedWeather === "sunny" &&
-      intelligenceSignals.some((s) => s.name === "Payday Cycle")
-    ) {
-      newRecs.push({
-        priority: "high",
-        title: '"Perfect Storm": Concert + Sunny + Payday',
-        description:
-          "Anticipate 400% demand for premium cold drinks and desserts. Extend hours; triple cold brew & premium cookies.",
-        profit_impact: 2400,
-        confidence: 94,
-        action_required: true,
-        category: "demand",
-        trigger_sources: [
-          "Taylor Swift Concert",
-          "Payday Cycle",
-          "Sunny Weather",
-        ],
-      });
-    }
-
-    if (
-      selectedWeather === "rainy" &&
-      inventoryData.some(
-        (i) => i.name?.toLowerCase().includes("flour") && i.status === "low"
-      )
-    ) {
-      newRecs.push({
-        priority: "medium",
-        title: "Rainy Day Pastry Push",
-        description:
-          'Rain increases pastry demand. With flour low, consider a "2-for-1" on pastries to sell through before reorder.',
-        profit_impact: 80,
-        confidence: 85,
-        action_required: true,
-        category: "promotion",
-        trigger_sources: ["Rainy Weather", "Low Flour Stock"],
-      });
-    }
-
-    if (selectedWeather === "cloudy" || selectedWeather === "rainy") {
-      newRecs.push({
-        priority: "low",
-        title: "Increase Hot Beverage Prep",
-        description:
-          "Colder weather increases hot coffee sales. Prep ~20% more hot beverages.",
-        profit_impact: 120,
-        confidence: 88,
-        action_required: true,
-        category: "weather",
-        trigger_sources: ["Cloudy/Rainy"],
-      });
-    }
-
-    if (selectedWeather === "sunny") {
-      newRecs.push({
-        priority: "low",
-        title: "Boost Cold Drink Stock",
-        description:
-          "Sunny weather increases cold drink demand by ~80%. Ensure ice & cold beverage inventory.",
-        profit_impact: 150,
-        confidence: 92,
-        action_required: true,
-        category: "weather",
-        trigger_sources: ["Sunny Weather"],
-      });
-    }
-
-    setRecommendations((prev) => [
-      ...newRecs,
-      ...prev.filter(
-        (r) => !["demand", "weather", "promotion"].includes(r.category)
-      ),
-    ]);
-  }, [selectedWeather, intelligenceSignals, inventoryData]);
-
-  useEffect(() => {
-    if (!isLoading) generateDynamicRecs();
-  }, [isLoading, selectedWeather, generateDynamicRecs]);
-
-  const criticalItems = inventoryData.filter(
-    (i) => i.status === "critical"
-  ).length;
+  const criticalItems = data.alerts.filter((i) => i.priority === "high").length;
 
   // Static business KPIs (can be wired to backend later)
   const totalRevenue = "$45,720";
@@ -445,7 +314,7 @@ export default function UnifiedDashboard() {
         animate={{ opacity: 1, y: 0 }}
       >
         <AIRecommendations
-          recommendations={recommendations}
+          recommendations={data.recommendations}
           onApplyRecommendation={(rec) =>
             console.log("Apply recommendation:", rec?.title)
           }
@@ -615,7 +484,9 @@ export default function UnifiedDashboard() {
             Intelligence Hub (Events & Concerts)
           </h3>
           <div className="p-2">
-            <IntelligenceFeed intelligenceSignals={intelligenceSignals} />
+            <IntelligenceFeed
+              intelligenceSignals={data.intelligenceSignals || data.alerts}
+            />
           </div>
         </Card>
       </motion.div>

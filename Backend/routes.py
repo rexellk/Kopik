@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+import json
+import os
+import requests
+from datetime import datetime
 
 from database import (
     get_db,
@@ -21,10 +25,27 @@ from models import (
     Weather, WeatherCreate,
     Event, EventCreate,
     Sale, SaleCreate,
-    Order, OrderCreate, OrderUpdate
+    Order, OrderCreate, OrderUpdate,
+    Priority, RecommendationCategory
 )
 
 router = APIRouter()
+
+def call_intelligence_analyze():
+    """Call the existing intelligence/analyze endpoint and wait for completion"""
+    try:
+        print("🤖 Triggering intelligence analysis...")
+        response = requests.post('http://localhost:8000/api/intelligence/analyze', timeout=30)
+        if response.status_code == 200:
+            result = response.json()
+            print(f"✅ Intelligence analysis completed: {result.get('message', 'Success')}")
+            return True
+        else:
+            print(f"❌ Intelligence analysis failed with status: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Error calling intelligence/analyze: {e}")
+        return False
 
 @router.post("/intelligence-signals/", response_model=IntelligenceSignal)
 def create_intelligence_signal(signal: IntelligenceSignalCreate, db: Session = Depends(get_db)):
@@ -60,6 +81,10 @@ def create_inventory_item(item: InventoryItemCreate, db: Session = Depends(get_d
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
+    
+    # Trigger intelligence analysis after adding item
+    call_intelligence_analyze()
+    
     return db_item
 
 @router.get("/inventory-items/", response_model=List[InventoryItem])
@@ -89,6 +114,10 @@ def update_inventory_item(item_id: str, item_update: InventoryItemUpdate, db: Se
     
     db.commit()
     db.refresh(db_item)
+    
+    # Trigger intelligence analysis after updating item
+    call_intelligence_analyze()
+    
     return db_item
 
 @router.delete("/inventory-items/{item_id}")
@@ -99,6 +128,10 @@ def delete_inventory_item(item_id: str, db: Session = Depends(get_db)):
     
     db.delete(db_item)
     db.commit()
+    
+    # Trigger intelligence analysis after deleting item
+    call_intelligence_analyze()
+    
     return {"message": "Inventory item deleted successfully"}
 
 @router.get("/inventory-items/low-stock/", response_model=List[InventoryItem])
@@ -319,13 +352,13 @@ def get_intelligence_dashboard():
         weather_alerts, weather_solutions = agent.analyze_weather_impact(data['weather'], data['sales'])
         event_alerts, event_solutions = agent.analyze_events(data['events'])
         order_alerts, order_solutions = agent.analyze_orders(data['orders'])
-
+        
         # Combine results
         all_alerts = inventory_alerts + waste_alerts + weather_alerts + event_alerts + order_alerts
         all_solutions = inventory_solutions + waste_solutions + weather_solutions + event_solutions + order_solutions
 
         # Calculate metrics
-        high_priority_count = len([a for a in all_alerts if a.get('priority') == Priority.HIGH])
+        high_priority_count = len([a for a in all_alerts if a.get('priority') == Priority.HIGH.value])
         total_profit_impact = sum(s.get('profit_impact', 0) for s in all_solutions)
 
         # Generate data overview for summary
@@ -376,15 +409,19 @@ def get_intelligence_dashboard():
                 {
                     "id": i + 1,
                     "type": alert.get("type", "general"),
+                    "title": alert.get("type", "general").replace("_", " ").title(),
                     "message": alert.get("message", ""),
-                    "priority": str(alert.get("priority", Priority.MEDIUM)),
-                    "category": str(alert.get("category", "general"))
+                    "priority": str(alert.get("priority", "medium")).replace("Priority.", "").lower(),
+                    "category": str(alert.get("category", "inventory")).replace("RecommendationCategory.", "").lower(),
+                    "timestamp": datetime.now().isoformat(),
+                    "actionable": True
                 }
                 for i, alert in enumerate(all_alerts[:10])  # Limit to top 10
             ],
             "recommendations": [
                 {
                     "id": i + 1,
+                    "title": solution.get("description", "")[:50] + "..." if len(solution.get("description", "")) > 50 else solution.get("description", ""),
                     "description": solution.get("description", ""),
                     "confidence": round(solution.get("confidence", 80), 1),
                     "profit_impact": round(solution.get("profit_impact", 0), 2),
@@ -393,7 +430,7 @@ def get_intelligence_dashboard():
                 for i, solution in enumerate(all_solutions[:10])  # Limit to top 10
             ],
             "data_overview": data_overview
-        }
+       }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Intelligence analysis failed: {str(e)}")
@@ -403,9 +440,7 @@ def trigger_intelligence_analysis():
     """Trigger a fresh intelligence analysis and return summary"""
     try:
         import sys
-        import os
-        from datetime import datetime
-
+        
         # Add agents directory to path
         agents_path = os.path.join(os.path.dirname(__file__), 'agents')
         if agents_path not in sys.path:
@@ -416,7 +451,7 @@ def trigger_intelligence_analysis():
         # Run analysis
         agent = EnhancedKopikAgent()
         success = agent.run_comprehensive_analysis()
-
+        
         return {
             "success": success,
             "message": "Analysis completed successfully" if success else "Analysis failed",
