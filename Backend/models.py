@@ -98,7 +98,7 @@ class IntelligenceSignal(IntelligenceSignalBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class WeatherSensitivity(BaseModel):
     sunny: Optional[float] = None
@@ -146,7 +146,7 @@ class InventoryItem(InventoryItemBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class RecommendationBase(BaseModel):
     priority: Priority
@@ -167,7 +167,7 @@ class Recommendation(RecommendationBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Food Waste Models
 class FoodWasteBase(BaseModel):
@@ -187,7 +187,7 @@ class FoodWaste(FoodWasteBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Weather Models
 class WeatherBase(BaseModel):
@@ -208,7 +208,7 @@ class Weather(WeatherBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Event Models
 class EventBase(BaseModel):
@@ -229,7 +229,7 @@ class Event(EventBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Sale Models
 class SaleBase(BaseModel):
@@ -250,7 +250,7 @@ class Sale(SaleBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Order Models
 class OrderBase(BaseModel):
@@ -284,4 +284,4 @@ class Order(OrderBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

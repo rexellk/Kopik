@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+import json
+import os
+import requests
+from datetime import datetime
 
 from database import (
     get_db,
@@ -26,6 +30,22 @@ from models import (
 )
 
 router = APIRouter()
+
+def call_intelligence_analyze():
+    """Call the existing intelligence/analyze endpoint and wait for completion"""
+    try:
+        print("🤖 Triggering intelligence analysis...")
+        response = requests.post('http://localhost:8000/api/intelligence/analyze', timeout=30)
+        if response.status_code == 200:
+            result = response.json()
+            print(f"✅ Intelligence analysis completed: {result.get('message', 'Success')}")
+            return True
+        else:
+            print(f"❌ Intelligence analysis failed with status: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Error calling intelligence/analyze: {e}")
+        return False
 
 @router.post("/intelligence-signals/", response_model=IntelligenceSignal)
 def create_intelligence_signal(signal: IntelligenceSignalCreate, db: Session = Depends(get_db)):
@@ -61,6 +81,10 @@ def create_inventory_item(item: InventoryItemCreate, db: Session = Depends(get_d
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
+    
+    # Trigger intelligence analysis after adding item
+    call_intelligence_analyze()
+    
     return db_item
 
 @router.get("/inventory-items/", response_model=List[InventoryItem])
@@ -90,6 +114,10 @@ def update_inventory_item(item_id: str, item_update: InventoryItemUpdate, db: Se
     
     db.commit()
     db.refresh(db_item)
+    
+    # Trigger intelligence analysis after updating item
+    call_intelligence_analyze()
+    
     return db_item
 
 @router.delete("/inventory-items/{item_id}")
@@ -100,6 +128,10 @@ def delete_inventory_item(item_id: str, db: Session = Depends(get_db)):
     
     db.delete(db_item)
     db.commit()
+    
+    # Trigger intelligence analysis after deleting item
+    call_intelligence_analyze()
+    
     return {"message": "Inventory item deleted successfully"}
 
 @router.get("/inventory-items/low-stock/", response_model=List[InventoryItem])
@@ -422,9 +454,7 @@ def trigger_intelligence_analysis():
     """Trigger a fresh intelligence analysis and return summary"""
     try:
         import sys
-        import os
-        from datetime import datetime
-
+        
         # Add agents directory to path
         agents_path = os.path.join(os.path.dirname(__file__), 'agents')
         if agents_path not in sys.path:
@@ -435,7 +465,7 @@ def trigger_intelligence_analysis():
         # Run analysis
         agent = EnhancedKopikAgent()
         success = agent.run_comprehensive_analysis()
-
+        
         return {
             "success": success,
             "message": "Analysis completed successfully" if success else "Analysis failed",
