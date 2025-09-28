@@ -28,6 +28,8 @@ class EnhancedKopikAgent:
 
     def __init__(self):
         self.analysis_count = 0
+        self.last_summary = None
+        self.last_analysis_data = None
         print("🤖 Enhanced Kopik Intelligence Agent initialized")
 
     def fetch_comprehensive_data(self):
@@ -365,6 +367,28 @@ class EnhancedKopikAgent:
 
         return alerts, solutions
 
+    def generate_summary(self, all_alerts: List[Dict], all_solutions: List[Dict], data_overview: Dict) -> str:
+        """Generate LLM-powered summary of analysis results"""
+        try:
+            # Import LLM service
+            parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            sys.path.append(parent_dir)
+            from llm_summary import llm_service
+
+            return llm_service.generate_business_summary(all_alerts, all_solutions, data_overview)
+        except Exception as e:
+            print(f"⚠️ LLM summary failed, using fallback: {e}")
+            # Fallback summary
+            high_priority = len([a for a in all_alerts if a.get('priority') == 'high'])
+            total_impact = sum(s.get('profit_impact', 0) for s in all_solutions)
+
+            if high_priority > 0:
+                return f"URGENT: {high_priority} critical issues detected. AI analysis identified ${total_impact:.0f} in potential profit optimization across {len(all_solutions)} recommendations."
+            elif len(all_alerts) > 0:
+                return f"ATTENTION: {len(all_alerts)} items need attention. ${total_impact:.0f} in optimization opportunities identified."
+            else:
+                return f"GOOD: Operations running smoothly. ${total_impact:.0f} in potential optimizations available."
+
     def run_comprehensive_analysis(self):
         """Run complete analysis of all data sources"""
         print(f"\n🔍 Running comprehensive analysis #{self.analysis_count + 1}...")
@@ -423,10 +447,33 @@ class EnhancedKopikAgent:
             print(f"   - {len(all_solutions)} recommendations generated")
             print(f"   - ${total_profit_impact:.2f} total profit impact potential")
 
+            # Generate LLM summary
+            data_overview = {
+                "low_stock_items": len(data['inventory']),
+                "recent_waste_records": len(data['food_waste']),
+                "upcoming_events": len(data['events']),
+                "pending_orders": len(data['orders'])
+            }
+
+            summary = self.generate_summary(all_alerts, all_solutions, data_overview)
+            print(f"\n📝 Business Summary:")
+            print(f"   {summary}")
+
             # Show sample insights by category
             self.display_category_insights(all_alerts, all_solutions)
 
             self.analysis_count += 1
+
+            # Store summary for API access
+            self.last_summary = summary
+            self.last_analysis_data = {
+                "alerts": all_alerts,
+                "solutions": all_solutions,
+                "data_overview": data_overview,
+                "summary": summary,
+                "timestamp": datetime.now().isoformat()
+            }
+
             return True
 
         except Exception as e:

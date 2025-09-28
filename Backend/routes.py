@@ -328,11 +328,23 @@ def get_intelligence_dashboard():
         high_priority_count = len([a for a in all_alerts if a.get('priority') == Priority.HIGH])
         total_profit_impact = sum(s.get('profit_impact', 0) for s in all_solutions)
 
+        # Generate data overview for summary
+        data_overview = {
+            "low_stock_items": len(data['inventory']),
+            "recent_waste_records": len(data['food_waste']),
+            "upcoming_events": len(data['events']),
+            "pending_orders": len(data['orders'])
+        }
+
+        # Generate LLM summary
+        summary = agent.generate_summary(all_alerts, all_solutions, data_overview)
+
         # Format response
         return {
             "success": True,
             "timestamp": datetime.now().isoformat(),
-            "summary": {
+            "summary": summary,  # LLM-generated business summary
+            "metrics": {
                 "total_alerts": len(all_alerts),
                 "high_priority_alerts": high_priority_count,
                 "total_recommendations": len(all_solutions),
@@ -357,12 +369,7 @@ def get_intelligence_dashboard():
                 }
                 for i, solution in enumerate(all_solutions[:10])  # Limit to top 10
             ],
-            "data_overview": {
-                "low_stock_items": len(data['inventory']),
-                "recent_waste_records": len(data['food_waste']),
-                "upcoming_events": len(data['events']),
-                "pending_orders": len(data['orders'])
-            }
+            "data_overview": data_overview
         }
 
     except Exception as e:
