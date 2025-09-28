@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { BarChart3, Package, CloudSun, TrendingUp, Settings } from "lucide-react";
+import ApiStatus from "./src/components/ApiStatus.jsx";
 import {
   Sidebar,
   SidebarContent,
@@ -137,7 +138,11 @@ export default function Layout({ children, currentPageName }) {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-gray-100 p-4">
+          <SidebarFooter className="border-t border-gray-100 p-4 space-y-4">
+            <div className="px-2">
+              <ApiStatus />
+            </div>
+            
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-semibold text-sm">DC</span>

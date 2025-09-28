@@ -3,7 +3,8 @@ import {
   InventoryItem,
   Recommendation,
   IntelligenceSignal,
-} from "../Entities/all.js";
+} from "../src/services/entities.js";
+import { ApiError } from "../src/services/api.js";
 import { motion } from "framer-motion";
 import { Package, AlertTriangle, DollarSign, Brain } from "lucide-react";
 
@@ -20,8 +21,13 @@ export default function Dashboard() {
   const [intelligenceSignals, setIntelligenceSignals] = useState([]);
   const [selectedWeather, setSelectedWeather] = useState("cloudy");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
       const [inventory, recs, signals] = await Promise.all([
         InventoryItem.list(),
@@ -31,22 +37,30 @@ export default function Dashboard() {
 
       const updatedInventory = inventory.map((item) => {
         const daily_usage = item.daily_usage || 1; // Prevent division by zero
-        const daysLeft = item.currentStock / daily_usage;
+        const currentStock = item.current_stock || item.currentStock || 0;
+        const daysLeft = Math.floor(currentStock / daily_usage);
         let status = "good";
         if (daysLeft <= 2) status = "critical";
         else if (daysLeft <= 5) status = "low";
 
-        return { ...item, daysLeft, status };
+        return { ...item, daysLeft, status, currentStock };
       });
 
       setInventoryData(updatedInventory);
       setRecommendations(recs);
       setIntelligenceSignals(signals);
+      setRetryCount(0); // Reset retry count on success
     } catch (error) {
       console.error("Error loading data:", error);
+      setError(error instanceof ApiError ? error.message : "Failed to load data. Please check your connection.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    loadData();
   };
 
   const generateAdvancedRecommendations = useCallback(() => {
@@ -167,6 +181,45 @@ export default function Dashboard() {
   const predictedProfit = 1450; // Increased profit with new intelligence
   const aiConfidence = 97; // Increased confidence
 
+  // Loading screen
+  if (isLoading && inventoryData.length === 0) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Dashboard</h2>
+          <p className="text-gray-600">Fetching latest inventory data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error screen
+  if (error) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-full flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="mb-4">
+            <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Connection Error</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <div className="space-y-2">
+              <button
+                onClick={handleRetry}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Retry Connection
+              </button>
+              <p className="text-sm text-gray-500">
+                Make sure the backend server is running on localhost:8000
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 bg-gray-50 min-h-full space-y-8">
       {/* Header */}
@@ -180,12 +233,25 @@ export default function Dashboard() {
           <p className="text-gray-600 mt-1">
             AI-powered inventory insights for Demo Cafe
           </p>
+          {isLoading && (
+            <div className="flex items-center gap-2 mt-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-sm text-blue-600">Refreshing data...</span>
+            </div>
+          )}
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">Last updated</p>
           <p className="font-semibold text-gray-900">
             {new Date().toLocaleTimeString()}
           </p>
+          <button
+            onClick={loadData}
+            className="text-sm text-blue-600 hover:text-blue-800 mt-1"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Refreshing...' : 'Refresh Data'}
+          </button>
         </div>
       </motion.div>
 
