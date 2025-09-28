@@ -61,6 +61,8 @@ class LLMSummaryService:
             # Create system prompt + user prompt for Gemini
             full_prompt = f"""You are a business intelligence assistant for Kopik, an AI-powered inventory management system. Generate concise, actionable business summaries from data analysis results.
 
+CRITICAL: Return ONLY clean plain text without any markdown formatting, headers, or prefixes. No "**", no "Summary:", no special formatting. Just the pure text content.
+
 {prompt}"""
 
             # Generate content with Gemini
@@ -72,7 +74,26 @@ class LLMSummaryService:
                 )
             )
 
-            return response.text.strip()
+            # Clean the response to ensure no formatting remains
+            clean_text = response.text.strip()
+
+            # Remove common markdown formatting patterns
+            clean_text = clean_text.replace('**', '')  # Remove bold formatting
+            clean_text = clean_text.replace('*', '')   # Remove italic formatting
+            clean_text = clean_text.replace('#', '')   # Remove headers
+
+            # Remove common prefixes that might appear
+            prefixes_to_remove = [
+                'Executive Summary:', 'Summary:', 'Business Summary:',
+                'Executive Summary for Kopik Users:', 'Analysis Summary:',
+                'Business Intelligence Summary:', 'Intelligence Summary:'
+            ]
+
+            for prefix in prefixes_to_remove:
+                if clean_text.startswith(prefix):
+                    clean_text = clean_text[len(prefix):].strip()
+
+            return clean_text
 
         except Exception as e:
             # For now, raise the exception to see what's wrong with Gemini
@@ -122,12 +143,12 @@ Analyze this business intelligence data and provide a concise summary for restau
             prompt += f"- {solution.get('description', 'Recommendation available')} (${impact:.0f} impact, {confidence}% confidence)\n"
 
         prompt += """
-Generate a 2-3 sentence executive summary focusing on:
+Generate a clean 2-3 sentence executive summary focusing on:
 1. Most critical issues requiring immediate attention
 2. Biggest opportunities for revenue/cost savings
 3. Overall business health assessment
 
-Keep it concise and action-oriented for busy restaurant operators."""
+IMPORTANT: Return ONLY plain text without any headers, markdown formatting, or prefixes like "Executive Summary:" or "**". The frontend will handle all formatting and headers."""
 
         return prompt
 

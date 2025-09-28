@@ -339,6 +339,27 @@ def get_intelligence_dashboard():
         # Generate LLM summary
         summary = agent.generate_summary(all_alerts, all_solutions, data_overview)
 
+        # Enhanced LLM Features
+        try:
+            from llm_explanations import explanation_service
+            from llm_risk_analyzer import risk_analyzer
+            from llm_menu_optimizer import menu_optimizer
+
+            # Risk analysis
+            risk_analysis = risk_analyzer.analyze_business_patterns(data)
+
+            # Menu suggestions
+            menu_suggestions = menu_optimizer.generate_menu_suggestions(data)
+
+            llm_features = {
+                "risk_analysis": risk_analysis,
+                "menu_optimization": menu_suggestions
+            }
+
+        except Exception as e:
+            llm_features = {"error": f"Advanced LLM features unavailable: {str(e)[:50]}"}
+            explanation_service = None
+
         # Format response
         return {
             "success": True,
@@ -350,6 +371,7 @@ def get_intelligence_dashboard():
                 "total_recommendations": len(all_solutions),
                 "total_profit_impact": round(total_profit_impact, 2)
             },
+            "llm_features": llm_features,  # Advanced LLM capabilities
             "alerts": [
                 {
                     "id": i + 1,
@@ -365,7 +387,8 @@ def get_intelligence_dashboard():
                     "id": i + 1,
                     "description": solution.get("description", ""),
                     "confidence": round(solution.get("confidence", 80), 1),
-                    "profit_impact": round(solution.get("profit_impact", 0), 2)
+                    "profit_impact": round(solution.get("profit_impact", 0), 2),
+                    "explanation": explanation_service.explain_recommendation(solution, data_overview) if 'explanation_service' in locals() and explanation_service else f"Recommended: {solution.get('description', 'Take action')}"
                 }
                 for i, solution in enumerate(all_solutions[:10])  # Limit to top 10
             ],
