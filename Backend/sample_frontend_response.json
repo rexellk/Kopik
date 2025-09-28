@@ -1,0 +1,120 @@
+{
+  "success": true,
+  "timestamp": "2025-09-27T22:30:15.123456",
+  "summary": {
+    "total_alerts": 6,
+    "high_priority_alerts": 3,
+    "total_recommendations": 7,
+    "total_profit_impact": 32172.67
+  },
+  "alerts": [
+    {
+      "id": 1,
+      "type": "low_stock",
+      "title": "Low Inventory Alert",
+      "message": "Low stock: Premium Coffee Beans (8.0 units remaining)",
+      "priority": "medium",
+      "category": "inventory",
+      "timestamp": "2025-09-27T22:30:15.123456",
+      "actionable": true
+    },
+    {
+      "id": 2,
+      "type": "upcoming_event",
+      "title": "Event Planning Alert",
+      "message": "Major event in 3 days: Summer Music Festival (2500 expected)",
+      "priority": "high",
+      "category": "demand",
+      "timestamp": "2025-09-27T22:30:15.123456",
+      "actionable": true
+    },
+    {
+      "id": 3,
+      "type": "delayed_orders",
+      "title": "Supply Chain Issue",
+      "message": "1 delayed orders worth $89.90",
+      "priority": "high",
+      "category": "orders",
+      "timestamp": "2025-09-27T22:30:15.123456",
+      "actionable": true
+    }
+  ],
+  "recommendations": [
+    {
+      "id": 1,
+      "title": "Event Preparation",
+      "description": "Increase inventory by 250% for Summer Music Festival",
+      "confidence": 85.0,
+      "profit_impact": 22500.0,
+      "priority": "high",
+      "estimated_implementation": "3-5 days",
+      "tags": ["events", "high-impact", "demand"]
+    },
+    {
+      "id": 2,
+      "title": "Inventory Reorder",
+      "description": "Reorder Premium Coffee Beans immediately or source from alternative supplier",
+      "confidence": 89.2,
+      "profit_impact": 437.32,
+      "priority": "medium",
+      "estimated_implementation": "1-2 days",
+      "tags": ["inventory", "supply-chain"]
+    },
+    {
+      "id": 3,
+      "title": "Supply Chain",
+      "description": "Contact suppliers for delayed orders and find alternative sources",
+      "confidence": 85.0,
+      "profit_impact": 8.99,
+      "priority": "high",
+      "estimated_implementation": "immediate",
+      "tags": ["supply-chain", "urgent"]
+    }
+  ],
+  "categories": {
+    "inventory": {
+      "alerts_count": 3,
+      "low_stock_items": 3,
+      "total_items": 5
+    },
+    "food_waste": {
+      "alerts_count": 0,
+      "total_cost_impact": 56.23,
+      "waste_records": 15
+    },
+    "weather": {
+      "alerts_count": 0,
+      "current_condition": "sunny",
+      "temperature": 72.0
+    },
+    "events": {
+      "alerts_count": 1,
+      "upcoming_events": 3,
+      "total_expected_attendance": 3600
+    },
+    "sales": {
+      "alerts_count": 0,
+      "recent_sales": 46,
+      "total_revenue": 2847.65
+    },
+    "orders": {
+      "alerts_count": 2,
+      "pending_orders": 3,
+      "total_order_value": 641.05
+    }
+  },
+  "insights": [
+    "3 critical issues require immediate attention",
+    "$32,173 in potential profit improvements identified",
+    "$56 in food waste this week - prevention opportunities available",
+    "3 upcoming events with 3,600 expected attendees",
+    "Supply chain delays detected - alternative sourcing recommended"
+  ],
+  "data_overview": {
+    "low_stock_items": 3,
+    "recent_waste_records": 15,
+    "upcoming_events": 3,
+    "pending_orders": 3,
+    "last_updated": "2025-09-27T22:30:15.123456"
+  }
+}
