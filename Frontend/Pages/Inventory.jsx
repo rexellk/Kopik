@@ -48,7 +48,7 @@ export default function Inventory() {
   }
 
   // Map backend inventory structure to frontend expected structure
-  const items = (data.inventory || []).map(item => ({
+  const items = (data.inventory || []).map((item) => ({
     id: item.id,
     title: item.name, // Backend uses 'name', frontend expects 'title'
     category: item.category,
@@ -59,7 +59,7 @@ export default function Inventory() {
     supplier: item.supplier,
     sku: item.sku,
     // Keep original item for additional data
-    ...item
+    ...item,
   }));
 
   const categories = useMemo(() => {
@@ -68,9 +68,7 @@ export default function Inventory() {
   }, [items]);
 
   const lowStock = useMemo(() => {
-    return items.filter(
-      (it) => it.type === 'low_stock'
-    );
+    return items.filter((it) => it.type === "low_stock");
   }, [items]);
 
   const filtered = useMemo(() => {
@@ -143,22 +141,25 @@ export default function Inventory() {
 
   async function triggerIntelligenceAnalysis() {
     try {
-      console.log('🤖 Triggering AI analysis...');
-      const response = await fetch('http://localhost:8000/api/intelligence/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
+      console.log("🤖 Triggering AI analysis...");
+      const response = await fetch(
+        "http://localhost:8000/api/intelligence/analyze",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ AI analysis completed:', result.message);
+        console.log("✅ AI analysis completed:", result.message);
         // Wait a moment for the analysis to be processed
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
       }
     } catch (error) {
-      console.warn('Failed to trigger intelligence analysis:', error);
+      console.warn("Failed to trigger intelligence analysis:", error);
     }
   }
 
@@ -169,21 +170,23 @@ export default function Inventory() {
     }
 
     const selectedItems = Array.from(selected);
-    const itemNames = selectedItems.map(id => {
-      const item = items.find(i => i.id === id);
+    const itemNames = selectedItems.map((id) => {
+      const item = items.find((i) => i.id === id);
       return item ? item.title : `ID: ${id}`;
     });
 
-    const confirmMessage = `Are you sure you want to delete ${selectedItems.length} item(s)?\n\n${itemNames.join('\n')}\n\nThis action cannot be undone.`;
-    
+    const confirmMessage = `Are you sure you want to delete ${
+      selectedItems.length
+    } item(s)?\n\n${itemNames.join("\n")}\n\nThis action cannot be undone.`;
+
     if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       // Delete each selected item
-      const deletePromises = selectedItems.map(id => {
-        const item = items.find(i => i.id === id);
+      const deletePromises = selectedItems.map((id) => {
+        const item = items.find((i) => i.id === id);
         if (item && item.item_id) {
           return inventoryAPI.delete(item.item_id);
         }
@@ -191,22 +194,22 @@ export default function Inventory() {
       });
 
       await Promise.all(deletePromises);
-      
+
       // Clear selection
       setSelected(new Set());
-      
+
       // Trigger AI analysis after deletion
       await triggerIntelligenceAnalysis();
-      
+
       // Refresh data
       if (refetchData) {
         await refetchData();
       }
-      
+
       alert(`Successfully deleted ${selectedItems.length} item(s).`);
-      
+
       // Redirect to dashboard and reload to ensure fresh data
-      navigate('/dashboard');
+      navigate("/dashboard");
       window.location.reload();
     } catch (error) {
       alert(`Failed to delete items: ${error.message}`);
@@ -220,10 +223,10 @@ export default function Inventory() {
   async function handleAddProduct(productData) {
     try {
       await inventoryAPI.create(productData);
-      
+
       // Trigger AI analysis after adding product
       await triggerIntelligenceAnalysis();
-      
+
       // Refresh the data to show the new product
       if (refetchData) {
         await refetchData();
@@ -237,33 +240,32 @@ export default function Inventory() {
     sorted.length > 0 && sorted.every((i) => selected.has(i.id));
   const someChecked = selected.size > 0 && !allChecked;
 
-
   // Get alerts from React context (from /api/intelligence/dashboard)
   const sampleAlerts = data?.alerts ? data.alerts.slice(0, 3) : [];
 
   // Map priority to colors
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
-      case 'high':
+      case "high":
         return {
-          bg: 'bg-red-50',
-          border: 'border-red-200',
-          text: 'text-red-700',
-          icon: 'text-red-600'
+          bg: "bg-red-50",
+          border: "border-red-200",
+          text: "text-red-700",
+          icon: "text-red-600",
         };
-      case 'medium':
+      case "medium":
         return {
-          bg: 'bg-white',
-          border: 'border-yellow-200',
-          text: 'text-yellow-700',
-          icon: 'text-yellow-600'
+          bg: "bg-white",
+          border: "border-yellow-200",
+          text: "text-yellow-700",
+          icon: "text-yellow-600",
         };
       default:
         return {
-          bg: 'bg-blue-50',
-          border: 'border-blue-200',
-          text: 'text-blue-700',
-          icon: 'text-blue-600'
+          bg: "bg-blue-50",
+          border: "border-blue-200",
+          text: "text-blue-700",
+          icon: "text-blue-600",
         };
     }
   };
@@ -282,18 +284,24 @@ export default function Inventory() {
               >
                 <CardContent className="py-6 px-6">
                   <div className="flex items-center gap-4">
-                    <AlertTriangle className={`w-6 h-6 ${colors.icon} flex-shrink-0`} />
+                    <AlertTriangle
+                      className={`w-6 h-6 ${colors.icon} flex-shrink-0`}
+                    />
                     <div className="flex-1 min-w-0">
-                      <p className={`text-base pt-5 font-semibold ${colors.text} mb-1`}>
-                        {alert.title || alert.name || 'Alert'}
+                      <p
+                        className={`text-base pt-5 font-semibold ${colors.text} mb-1`}
+                      >
+                        {alert.title || alert.name || "Alert"}
                       </p>
                       <p className={`text-sm ${colors.text}`}>
-                        {alert.message || alert.summary || 'No message'}
+                        {alert.message || alert.summary || "No message"}
                       </p>
                     </div>
                     <div className="flex-shrink-0 pt-5 ">
-                      <span className={`inline-flex items-center px-3 py-2 rounded-full text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}>
-                        {(alert.priority || 'medium')?.toUpperCase()} PRIORITY
+                      <span
+                        className={`inline-flex items-center px-3 py-2 rounded-full text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
+                      >
+                        {(alert.priority || "medium")?.toUpperCase()} PRIORITY
                       </span>
                     </div>
                   </div>
@@ -329,14 +337,14 @@ export default function Inventory() {
             className="rounded-xl"
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete {selected.size > 0 ? `(${selected.size})` : ''}
+            Delete {selected.size > 0 ? `(${selected.size})` : ""}
           </Button>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Text search (optional helper) */}
           <Input
-            placeholder="Search name / SKU…"
+            placeholder="Search Name"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-56"
@@ -413,10 +421,10 @@ export default function Inventory() {
                   </td>
                   <td className="p-3 font-medium text-gray-900">{it.title}</td>
                   <td className="p-3">{it.category}</td>
-                  <td className="p-3">{it.qty} {it.unit}</td>
-                  <td className="p-3 text-right pr-4 text-gray-500">
-                    {it.id}
+                  <td className="p-3">
+                    {it.qty} {it.unit}
                   </td>
+                  <td className="p-3 text-right pr-4 text-gray-500">{it.id}</td>
                 </tr>
               );
             })}

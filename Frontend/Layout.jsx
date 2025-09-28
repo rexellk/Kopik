@@ -1,13 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import {
-  BarChart3,
-  Package,
-  CloudSun,
-  TrendingUp,
-  Settings,
-} from "lucide-react";
+import { BarChart3, Package, ShoppingBasket, CloudSun } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -33,6 +27,11 @@ const navigationItems = [
     title: "Inventory",
     url: createPageUrl("Inventory"),
     icon: Package,
+  },
+  {
+    title: "Order",
+    url: createPageUrl("Order"),
+    icon: ShoppingBasket,
   },
   {
     title: "Weather Impact",

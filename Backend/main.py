@@ -4,6 +4,9 @@ from fastapi.staticfiles import StaticFiles
 from database import engine, Base
 from routes import router
 import os
+from dotenv import load_dotenv
+# Load environment variables from .env file
+load_dotenv()
 
 Base.metadata.create_all(bind=engine)
 
