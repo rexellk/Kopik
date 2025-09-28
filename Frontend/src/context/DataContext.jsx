@@ -16,8 +16,9 @@ export const DataProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
       try {
         // Use sample JSON data for AI recommendations, but get live data for other parts
         const response = await fetch('http://localhost:8000/api/intelligence/dashboard');
@@ -103,11 +104,12 @@ export const DataProvider = ({ children }) => {
       }
     };
 
+  useEffect(() => {
     fetchData();
   }, []);
 
   return (
-    <DataContext.Provider value={{ data, loading, error }}>
+    <DataContext.Provider value={{ data, loading, error, refetchData: fetchData }}>
       {children}
     </DataContext.Provider>
   );

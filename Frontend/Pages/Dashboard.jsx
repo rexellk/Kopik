@@ -24,9 +24,9 @@ import {
 import { DollarSign, TrendingDown, TrendingUp, RotateCcw } from "lucide-react";
 
 // Keep: Weather impact simulator & Intelligence hub (existing components)
-import WeatherPanel from "../components/dashboard/WeatherPanel";
-import IntelligenceFeed from "../components/dashboard/IntelligenceFeed";
-import AIRecommendations from "../components/dashboard/AIRecommendations";
+import WeatherPanel from "../Components/dashboard/WeatherPanel";
+import IntelligenceFeed from "../Components/dashboard/IntelligenceFeed";
+import AIRecommendations from "../Components/dashboard/AIRecommendations";
 
 import { DataContext } from "../src/context/DataContext";
 
@@ -179,9 +179,7 @@ export default function UnifiedDashboard() {
     return <div>Error loading data.</div>;
   }
 
-  const criticalItems = data.alerts.filter(
-    (i) => i.priority === "high"
-  ).length;
+  const criticalItems = data.alerts.filter((i) => i.priority === "high").length;
 
   // Static business KPIs (can be wired to backend later)
   const totalRevenue = "$45,720";
@@ -486,7 +484,9 @@ export default function UnifiedDashboard() {
             Intelligence Hub (Events & Concerts)
           </h3>
           <div className="p-2">
-            <IntelligenceFeed intelligenceSignals={data.intelligenceSignals || data.alerts} />
+            <IntelligenceFeed
+              intelligenceSignals={data.intelligenceSignals || data.alerts}
+            />
           </div>
         </Card>
       </motion.div>

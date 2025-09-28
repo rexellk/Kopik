@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -13,6 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DataContext } from "../src/context/DataContext";
+import AddProductForm from "../components/AddProductForm";
+import { inventoryAPI } from "../src/services/api";
 
 const DEFAULT_THRESHOLD = 0.25;
 
@@ -28,11 +31,13 @@ function dotJoin(arr, max = 6) {
 }
 
 export default function Inventory() {
-  const { data, loading, error } = useContext(DataContext);
+  const { data, loading, error, refetchData } = useContext(DataContext);
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [sortBy, setSortBy] = useState({ key: "name", dir: "asc" }); // key in ["name","category","unit","qty","total","stockPct","cost"]
   const [selected, setSelected] = useState(() => new Set());
+  const [showAddForm, setShowAddForm] = useState(false);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -136,12 +141,68 @@ export default function Inventory() {
     });
   }
 
-  function handleDelete() {
-    console.log("Delete functionality disabled for now.")
+  async function handleDelete() {
+    if (selected.size === 0) {
+      alert("Please select items to delete.");
+      return;
+    }
+
+    const selectedItems = Array.from(selected);
+    const itemNames = selectedItems.map(id => {
+      const item = items.find(i => i.id === id);
+      return item ? item.title : `ID: ${id}`;
+    });
+
+    const confirmMessage = `Are you sure you want to delete ${selectedItems.length} item(s)?\n\n${itemNames.join('\n')}\n\nThis action cannot be undone.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      // Delete each selected item
+      const deletePromises = selectedItems.map(id => {
+        const item = items.find(i => i.id === id);
+        if (item && item.item_id) {
+          return inventoryAPI.delete(item.item_id);
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(deletePromises);
+      
+      // Clear selection
+      setSelected(new Set());
+      
+      // Refresh data
+      if (refetchData) {
+        await refetchData();
+      }
+      
+      alert(`Successfully deleted ${selectedItems.length} item(s).`);
+      
+      // Redirect to dashboard and reload to ensure fresh data
+      navigate('/dashboard');
+      window.location.reload();
+    } catch (error) {
+      alert(`Failed to delete items: ${error.message}`);
+    }
   }
 
   function handleAdd() {
-    console.log("Add functionality disabled for now.")
+    setShowAddForm(true);
+  }
+
+  async function handleAddProduct(productData) {
+    try {
+      await inventoryAPI.create(productData);
+      // Refresh the data to show the new product
+      if (refetchData) {
+        await refetchData();
+      }
+    } catch (error) {
+      throw new Error(error.message || "Failed to add product");
+    }
   }
 
   const allChecked =
@@ -236,10 +297,11 @@ export default function Inventory() {
           <Button
             variant="destructive"
             onClick={handleDelete}
+            disabled={selected.size === 0}
             className="rounded-xl"
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete
+            Delete {selected.size > 0 ? `(${selected.size})` : ''}
           </Button>
         </div>
 
@@ -341,6 +403,13 @@ export default function Inventory() {
           </tbody>
         </table>
       </div>
+
+      {/* Add Product Form Modal */}
+      <AddProductForm
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSubmit={handleAddProduct}
+      />
     </div>
   );
 }
