@@ -56,6 +56,7 @@ export default function AIRecommendations({
       <div className="flex items-center gap-2 mb-3">
         <Brain className="h-5 w-5 text-blue-600" />
         <h2 className="text-xl font-semibold">AI Recommendations</h2>
+        <span className="text-sm text-gray-500 ml-auto">Sorted by Priority & Impact</span>
       </div>
 
       {/* Equal-height columns */}
@@ -105,13 +106,13 @@ export default function AIRecommendations({
                       <Zap className="h-4 w-4 text-blue-600" /> AI TRIGGERS
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {(rec.trigger_sources || []).length > 0 ? (
-                        rec.trigger_sources.map((t, i) => (
+                      {(rec.tags || []).length > 0 ? (
+                        rec.tags.map((tag, i) => (
                           <span
                             key={i}
                             className="px-2.5 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
                           >
-                            {t}
+                            {tag}
                           </span>
                         ))
                       ) : (

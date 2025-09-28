@@ -21,7 +21,8 @@ from models import (
     Weather, WeatherCreate,
     Event, EventCreate,
     Sale, SaleCreate,
-    Order, OrderCreate, OrderUpdate
+    Order, OrderCreate, OrderUpdate,
+    Priority, RecommendationCategory
 )
 
 router = APIRouter()
@@ -319,13 +320,13 @@ def get_intelligence_dashboard():
         weather_alerts, weather_solutions = agent.analyze_weather_impact(data['weather'], data['sales'])
         event_alerts, event_solutions = agent.analyze_events(data['events'])
         order_alerts, order_solutions = agent.analyze_orders(data['orders'])
-
+        
         # Combine results
         all_alerts = inventory_alerts + waste_alerts + weather_alerts + event_alerts + order_alerts
         all_solutions = inventory_solutions + waste_solutions + weather_solutions + event_solutions + order_solutions
 
         # Calculate metrics
-        high_priority_count = len([a for a in all_alerts if a.get('priority') == Priority.HIGH])
+        high_priority_count = len([a for a in all_alerts if a.get('priority') == Priority.HIGH.value])
         total_profit_impact = sum(s.get('profit_impact', 0) for s in all_solutions)
 
         # Format response
@@ -342,26 +343,74 @@ def get_intelligence_dashboard():
                 {
                     "id": i + 1,
                     "type": alert.get("type", "general"),
+                    "title": alert.get("type", "general").replace("_", " ").title(),
                     "message": alert.get("message", ""),
-                    "priority": str(alert.get("priority", Priority.MEDIUM)),
-                    "category": str(alert.get("category", "general"))
+                    "priority": str(alert.get("priority", "medium")).replace("Priority.", "").lower(),
+                    "category": str(alert.get("category", "inventory")).replace("RecommendationCategory.", "").lower(),
+                    "timestamp": datetime.now().isoformat(),
+                    "actionable": True
                 }
                 for i, alert in enumerate(all_alerts[:10])  # Limit to top 10
             ],
             "recommendations": [
                 {
                     "id": i + 1,
+                    "title": solution.get("description", "")[:50] + "..." if len(solution.get("description", "")) > 50 else solution.get("description", ""),
                     "description": solution.get("description", ""),
                     "confidence": round(solution.get("confidence", 80), 1),
-                    "profit_impact": round(solution.get("profit_impact", 0), 2)
+                    "profit_impact": round(solution.get("profit_impact", 0), 2),
+                    "priority": solution.get("priority", "medium"),
+                    "estimated_implementation": solution.get("estimated_implementation", "1-3 days"),
+                    "tags": solution.get("tags", ["ai-generated"]),
+                    "trigger_sources": solution.get("trigger_sources", [])
                 }
                 for i, solution in enumerate(all_solutions[:10])  # Limit to top 10
+            ],
+            "categories": {
+                "inventory": {
+                    "alerts_count": len([a for a in all_alerts if a.get('category') == RecommendationCategory.INVENTORY]),
+                    "low_stock_items": len(data['inventory']),
+                    "total_items": len(data['inventory']) + 10  # Assuming some non-low-stock items
+                },
+                "food_waste": {
+                    "alerts_count": len([a for a in all_alerts if a.get('category') == RecommendationCategory.WASTE]),
+                    "total_cost_impact": sum(w.cost_impact for w in data['food_waste']) if data['food_waste'] else 0,
+                    "waste_records": len(data['food_waste'])
+                },
+                "weather": {
+                    "alerts_count": len([a for a in all_alerts if a.get('category') == RecommendationCategory.WEATHER]),
+                    "current_condition": data['weather'][0].condition.value if data['weather'] else "sunny",
+                    "temperature": data['weather'][0].temperature_high if data['weather'] else 72.0
+                },
+                "events": {
+                    "alerts_count": len([a for a in all_alerts if a.get('category') == RecommendationCategory.DEMAND]),
+                    "upcoming_events": len(data['events']),
+                    "total_expected_attendance": sum(e.expected_attendance or 0 for e in data['events'])
+                },
+                "sales": {
+                    "alerts_count": len([a for a in all_alerts if a.get('category') == RecommendationCategory.SALES]),
+                    "recent_sales": len(data['sales']),
+                    "total_revenue": sum(s.total_amount for s in data['sales']) if data['sales'] else 0
+                },
+                "orders": {
+                    "alerts_count": len([a for a in all_alerts if a.get('category') == RecommendationCategory.ORDERS]),
+                    "pending_orders": len(data['orders']),
+                    "total_order_value": sum(o.total_cost for o in data['orders']) if data['orders'] else 0
+                }
+            },
+            "insights": [
+                f"{high_priority_count} critical issues require immediate attention" if high_priority_count > 0 else "No critical issues detected",
+                f"${total_profit_impact:.0f} in potential profit improvements identified",
+                f"${sum(w.cost_impact for w in data['food_waste']):.0f} in food waste this week - prevention opportunities available" if data['food_waste'] else "No food waste recorded this week",
+                f"{len(data['events'])} upcoming events with {sum(e.expected_attendance or 0 for e in data['events'])} expected attendees" if data['events'] else "No upcoming events scheduled",
+                "Supply chain delays detected - alternative sourcing recommended" if any(o.status.value == "delayed" for o in data['orders']) else "Supply chain operating normally"
             ],
             "data_overview": {
                 "low_stock_items": len(data['inventory']),
                 "recent_waste_records": len(data['food_waste']),
                 "upcoming_events": len(data['events']),
-                "pending_orders": len(data['orders'])
+                "pending_orders": len(data['orders']),
+                "last_updated": datetime.now().isoformat()
             }
         }
 

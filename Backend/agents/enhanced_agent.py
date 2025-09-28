@@ -116,14 +116,15 @@ class EnhancedKopikAgent:
                 alerts.append({
                     "type": "high_waste",
                     "message": f"High waste detected for {item_id}: ${cost:.2f} in the last week",
-                    "priority": Priority.HIGH,
-                    "category": RecommendationCategory.WASTE
+                    "priority": Priority.HIGH.value,
+                    "category": RecommendationCategory.WASTE.value
                 })
 
                 solutions.append({
                     "description": f"Implement portion control and demand forecasting for {item_id}",
                     "confidence": 80.0,
-                    "profit_impact": cost * 0.7  # 70% reduction potential
+                    "profit_impact": cost * 0.7,  # 70% reduction potential
+                    "priority": Priority.HIGH.value
                 })
 
         # Waste pattern analysis
@@ -133,14 +134,15 @@ class EnhancedKopikAgent:
                 alerts.append({
                     "type": "expiration_waste",
                     "message": f"High expiration waste: ${expired_cost:.2f} in expired products",
-                    "priority": Priority.MEDIUM,
-                    "category": RecommendationCategory.WASTE
+                    "priority": Priority.MEDIUM.value,
+                    "category": RecommendationCategory.WASTE.value
                 })
 
                 solutions.append({
                     "description": "Implement FIFO rotation and better inventory tracking",
                     "confidence": 85.0,
-                    "profit_impact": expired_cost * 0.8
+                    "profit_impact": expired_cost * 0.8,
+                    "priority": Priority.MEDIUM.value
                 })
 
         return alerts, solutions
@@ -165,42 +167,45 @@ class EnhancedKopikAgent:
                 alerts.append({
                     "type": "weather_opportunity",
                     "message": f"Rainy weather expected: {precipitation}% precipitation chance",
-                    "priority": Priority.MEDIUM,
-                    "category": RecommendationCategory.WEATHER
+                    "priority": Priority.MEDIUM.value,
+                    "category": RecommendationCategory.WEATHER.value
                 })
 
                 solutions.append({
                     "description": "Increase hot beverage inventory and comfort food options",
                     "confidence": 75.0,
-                    "profit_impact": 200.0
+                    "profit_impact": 200.0,
+                    "priority": Priority.MEDIUM.value
                 })
 
             elif temp_high > 80:  # Hot weather
                 alerts.append({
                     "type": "weather_opportunity",
                     "message": f"Hot weather expected: {temp_high}°F high temperature",
-                    "priority": Priority.MEDIUM,
-                    "category": RecommendationCategory.WEATHER
+                    "priority": Priority.MEDIUM.value,
+                    "category": RecommendationCategory.WEATHER.value
                 })
 
                 solutions.append({
                     "description": "Increase cold beverage and ice cream inventory",
                     "confidence": 80.0,
-                    "profit_impact": 300.0
+                    "profit_impact": 300.0,
+                    "priority": Priority.MEDIUM.value
                 })
 
             elif temp_high < 40:  # Cold weather
                 alerts.append({
                     "type": "weather_opportunity",
                     "message": f"Cold weather expected: {temp_high}°F high temperature",
-                    "priority": Priority.MEDIUM,
-                    "category": RecommendationCategory.WEATHER
+                    "priority": Priority.MEDIUM.value,
+                    "category": RecommendationCategory.WEATHER.value
                 })
 
                 solutions.append({
                     "description": "Increase hot food and warm beverage inventory",
                     "confidence": 75.0,
-                    "profit_impact": 250.0
+                    "profit_impact": 250.0,
+                    "priority": Priority.MEDIUM.value
                 })
 
         return alerts, solutions
@@ -221,8 +226,8 @@ class EnhancedKopikAgent:
                 alerts.append({
                     "type": "upcoming_event",
                     "message": f"Major event in {days_until} days: {event.name} ({attendance} expected)",
-                    "priority": priority,
-                    "category": RecommendationCategory.DEMAND
+                    "priority": priority.value,
+                    "category": RecommendationCategory.DEMAND.value
                 })
 
                 inventory_increase = min(attendance * 0.1, 100)  # Cap at 100% increase
@@ -231,7 +236,8 @@ class EnhancedKopikAgent:
                 solutions.append({
                     "description": f"Increase inventory by {inventory_increase:.0f}% for {event.name}",
                     "confidence": 85.0,
-                    "profit_impact": profit_estimate
+                    "profit_impact": profit_estimate,
+                    "priority": Priority.HIGH.value if days_until <= 3 else Priority.MEDIUM.value
                 })
 
                 # Specific recommendations by event type
@@ -239,13 +245,15 @@ class EnhancedKopikAgent:
                     solutions.append({
                         "description": "Stock up on quick snacks, beverages, and finger foods",
                         "confidence": 90.0,
-                        "profit_impact": profit_estimate * 0.3
+                        "profit_impact": profit_estimate * 0.3,
+                        "priority": Priority.HIGH.value
                     })
                 elif event.event_type == EventType.FESTIVAL:
                     solutions.append({
                         "description": "Prepare special menu items and increase beverage stock",
                         "confidence": 85.0,
-                        "profit_impact": profit_estimate * 0.4
+                        "profit_impact": profit_estimate * 0.4,
+                        "priority": Priority.HIGH.value
                     })
 
         return alerts, solutions
@@ -284,14 +292,15 @@ class EnhancedKopikAgent:
                 alerts.append({
                     "type": "high_performer",
                     "message": f"Top seller {top_item[0]} generates ${top_revenue:.2f} (high dependency)",
-                    "priority": Priority.MEDIUM,
-                    "category": RecommendationCategory.SALES
+                    "priority": Priority.MEDIUM.value,
+                    "category": RecommendationCategory.SALES.value
                 })
 
                 solutions.append({
                     "description": f"Ensure adequate stock of top performer {top_item[0]}",
                     "confidence": 95.0,
-                    "profit_impact": top_revenue * 0.1
+                    "profit_impact": top_revenue * 0.1,
+                    "priority": Priority.HIGH.value
                 })
 
         # Identify underperformers
@@ -304,14 +313,15 @@ class EnhancedKopikAgent:
                     alerts.append({
                         "type": "underperformer",
                         "message": f"Low sales for {item_id}: only ${data['revenue']:.2f}",
-                        "priority": Priority.LOW,
-                        "category": RecommendationCategory.SALES
+                        "priority": Priority.LOW.value,
+                        "category": RecommendationCategory.SALES.value
                     })
 
                     solutions.append({
                         "description": f"Consider promoting or discontinuing {item_id}",
                         "confidence": 70.0,
-                        "profit_impact": 50.0
+                        "profit_impact": 50.0,
+                        "priority": Priority.LOW.value
                     })
 
         return alerts, solutions
@@ -337,14 +347,15 @@ class EnhancedKopikAgent:
             alerts.append({
                 "type": "delayed_orders",
                 "message": f"{len(delayed_orders)} delayed orders worth ${total_delayed_cost:.2f}",
-                "priority": Priority.HIGH,
-                "category": RecommendationCategory.ORDERS
+                "priority": Priority.HIGH.value,
+                "category": RecommendationCategory.ORDERS.value
             })
 
             solutions.append({
                 "description": "Contact suppliers for delayed orders and find alternative sources",
                 "confidence": 85.0,
-                "profit_impact": total_delayed_cost * 0.1
+                "profit_impact": total_delayed_cost * 0.1,
+                "priority": Priority.HIGH.value
             })
 
         # Overdue orders
@@ -353,14 +364,15 @@ class EnhancedKopikAgent:
             alerts.append({
                 "type": "overdue_orders",
                 "message": f"{len(overdue_orders)} overdue orders worth ${total_overdue_cost:.2f}",
-                "priority": Priority.HIGH,
-                "category": RecommendationCategory.ORDERS
+                "priority": Priority.HIGH.value,
+                "category": RecommendationCategory.ORDERS.value
             })
 
             solutions.append({
                 "description": "Immediate follow-up on overdue deliveries and emergency sourcing",
                 "confidence": 90.0,
-                "profit_impact": total_overdue_cost * 0.2
+                "profit_impact": total_overdue_cost * 0.2,
+                "priority": Priority.HIGH.value
             })
 
         return alerts, solutions
@@ -442,14 +454,26 @@ class EnhancedKopikAgent:
             alerts.append({
                 "type": "low_stock",
                 "message": f"Low stock: {item.name} ({item.current_stock} units remaining)",
-                "priority": Priority.HIGH if item.current_stock == 0 else Priority.MEDIUM,
-                "category": RecommendationCategory.INVENTORY
+                "priority": Priority.HIGH.value if item.current_stock == 0 else Priority.MEDIUM.value,
+                "category": RecommendationCategory.INVENTORY.value
             })
+
+            # Determine priority based on stock level and profit impact
+            profit_impact = item.cost_per_unit * item.daily_usage * 7
+            if item.current_stock == 0:
+                priority = Priority.HIGH.value
+            elif profit_impact > 300:
+                priority = Priority.HIGH.value
+            elif profit_impact > 100:
+                priority = Priority.MEDIUM.value
+            else:
+                priority = Priority.LOW.value
 
             solutions.append({
                 "description": f"Reorder {item.name} immediately or source from alternative supplier",
                 "confidence": random.uniform(75.0, 99.0),
-                "profit_impact": item.cost_per_unit * item.daily_usage * 7
+                "profit_impact": profit_impact,
+                "priority": priority
             })
 
         return alerts, solutions
