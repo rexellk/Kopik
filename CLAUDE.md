@@ -62,7 +62,17 @@ python main.py       # Starts on http://localhost:8000
 # Database operations
 python setup_database.py     # Initialize database schema
 python populate_database.py  # Seed database with sample data
+
+# AI Agent Testing
+python agents/test_enhanced_agent.py    # Test AI analysis system
+python agents/quick_test.py             # Quick agent functionality test
 ```
+
+### Important Development Notes
+- **Port conflicts**: If port 8000 is in use, kill existing processes with `lsof -ti:8000 | xargs kill -9`
+- **API endpoints**: Access Swagger docs at `http://localhost:8000/docs`
+- **CORS enabled**: Frontend can connect from any origin
+- **Database auto-creation**: SQLite database created automatically on first run
 
 ## API Structure
 
@@ -70,13 +80,38 @@ The backend provides RESTful endpoints under `/api` prefix:
 - `/intelligence-signals/` - External data signals affecting inventory
 - `/inventory-items/` - CRUD operations for inventory management
 - `/recommendations/` - AI-generated business recommendations
+- `/intelligence/dashboard` - Comprehensive dashboard analytics
+- `/intelligence/analyze` - Trigger AI analysis and recommendation generation
 
-Key features:
-- Weather sensitivity tracking for inventory items
-- Low stock monitoring with automated reorder points
-- High-priority recommendation filtering
-- Comprehensive CRUD operations with validation
+### Critical API Flow
+**Important**: The system uses a specific sequence for data updates:
+1. **Add/Delete/Update inventory** → Automatically triggers `/intelligence/analyze`
+2. **Analysis completes** → Frontend can then fetch fresh data from `/intelligence/dashboard`
+3. **Frontend data refresh** → Updates all components with new AI insights
+
+### AI Agent System
+The backend includes an AI agent system (`/agents/`) that:
+- Processes inventory data to generate intelligent recommendations
+- Analyzes weather sensitivity and demand patterns
+- Provides comprehensive business intelligence via `enhanced_agent.py`
+- Auto-triggers analysis when inventory changes occur
+
+## Data Flow Architecture
+
+### Frontend State Management
+- **DataContext**: Centralized React context for application state
+- **Real-time API integration**: Fetches live data from backend APIs (no static JSON)
+- **Priority-based sorting**: Recommendations sorted by priority (high/medium/low) and profit impact
+- **Hybrid data sources**: Combines inventory, intelligence signals, and AI recommendations
+
+### Backend Intelligence
+- **Synchronous analysis**: Inventory operations wait for AI analysis completion
+- **Database-driven**: SQLite with SQLAlchemy ORM for all data persistence
+- **Pydantic v2**: Uses `from_attributes = True` (not legacy `orm_mode`)
+- **Cross-system integration**: AI agents can access all database models
 
 ## Project Context
 
 This is an intelligent inventory management system that incorporates external intelligence signals (weather, events, economic factors) to provide AI-driven recommendations for optimal inventory management. The system tracks weather sensitivity for different products and generates actionable insights for business operations.
+
+The architecture emphasizes real-time AI analysis triggered by inventory changes, ensuring recommendations stay current with business operations.

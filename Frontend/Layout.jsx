@@ -81,12 +81,16 @@ export default function Layout({ children, currentPageName }) {
         <Sidebar className="border-r border-gray-100 shadow-elegant h-screen sticky top-0 flex flex-col">
           <SidebarHeader className="border-b border-gray-100 p-6 bg-gradient-to-r from-blue-600 to-blue-700">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <Package className="w-6 h-6 text-white" />
+              <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center overflow-hidden">
+                <img 
+                  src="/images/Kopik.png" 
+                  alt="Kopik Logo" 
+                  className="w-6 h-6 object-contain"
+                />
               </div>
               <div>
                 <h1 className="font-bold text-xl text-white">Kopik</h1>
-                <p className="text-xs text-blue-100">POS Management System</p>
+                <p className="text-xs text-blue-100">Intelligent Inventory Management</p>
               </div>
             </div>
           </SidebarHeader>
@@ -156,7 +160,7 @@ export default function Layout({ children, currentPageName }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-900 text-sm truncate">
-                  Ondo Bakery
+                  Smart Cafe Co.
                 </p>
                 <p className="text-xs text-gray-500 truncate">Premium Plan</p>
               </div>

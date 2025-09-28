@@ -194,7 +194,7 @@ export default function UnifiedDashboard() {
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-3xl font-bold text-gray-900">Ondo Bakery</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Smart Cafe Co.</h1>
       </motion.div>
 
       {/* Critical + Revenue + Waste Reduction + Inventory Turnover + Profit Margin */}
