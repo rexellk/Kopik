@@ -1,7 +1,6 @@
 
 import React, { createContext, useState, useEffect } from 'react';
 import { healthCheck } from '../services/api'; // Using healthCheck as a placeholder for the new endpoint
-import sampleData from '../../../Backend/sample_frontend_response.json';
 
 export const DataContext = createContext();
 
@@ -20,9 +19,9 @@ export const DataProvider = ({ children }) => {
     setLoading(true);
     setError(null);
       try {
-        // Use sample JSON data for AI recommendations, but get live data for other parts
+        // Fetch live dashboard data from API (no more sample_frontend_response.json)
         const response = await fetch('http://localhost:8000/api/intelligence/dashboard');
-        const liveData = await response.json();
+        const dashboardData = await response.json();
         
         // Fetch actual inventory data
         const inventoryResponse = await fetch('http://localhost:8000/api/inventory-items/');
@@ -39,8 +38,8 @@ export const DataProvider = ({ children }) => {
           console.warn('Failed to fetch intelligence signals, using sample data only:', intelligenceError);
         }
 
-        // Sort sample recommendations by priority and impact
-        const sortedRecommendations = [...sampleData.recommendations].sort((a, b) => {
+        // Sort dashboard recommendations by priority and impact
+        const sortedRecommendations = [...(dashboardData.recommendations || [])].sort((a, b) => {
           // First sort by priority (high=1, medium=2, low=3)
           const priorityA = priorityOrder[a.priority?.toLowerCase()] || 4;
           const priorityB = priorityOrder[b.priority?.toLowerCase()] || 4;
@@ -53,7 +52,7 @@ export const DataProvider = ({ children }) => {
           return (b.profit_impact || 0) - (a.profit_impact || 0);
         });
 
-        // Create hybrid intelligence signals: backend + sample fallback
+        // Create intelligence signals from backend data
         const mappedIntelligenceSignals = intelligenceSignals.map(signal => ({
           name: signal.name,
           category: signal.category,
@@ -64,11 +63,11 @@ export const DataProvider = ({ children }) => {
           ...signal
         }));
 
-        // Combine backend intelligence signals with sample data as fallback
+        // Combine backend intelligence signals with dashboard alerts
         const hybridIntelligenceSignals = [
           ...mappedIntelligenceSignals,
-          // Add sample alerts as additional intelligence signals if backend is limited
-          ...sampleData.alerts.map(alert => ({
+          // Add dashboard alerts as additional intelligence signals
+          ...(dashboardData.alerts || []).map(alert => ({
             name: alert.title || alert.message,
             category: alert.category,
             summary: alert.message,
@@ -79,20 +78,19 @@ export const DataProvider = ({ children }) => {
           }))
         ];
 
-        // Combine live data with sample recommendations and inventory data
+        // Use dashboard data as the main data source
         const combinedData = {
-          ...liveData,
+          ...dashboardData,
           recommendations: sortedRecommendations,
           // Use hybrid intelligence signals for Intelligence Hub
           intelligenceSignals: hybridIntelligenceSignals,
-          // Keep original sample alerts for Inventory page
-          alerts: sampleData.alerts,
+          // Use dashboard alerts for Inventory page
+          alerts: dashboardData.alerts || [],
           // Add actual inventory data
           inventory: inventoryData,
           summary: {
-            ...liveData.summary,
-            total_recommendations: sortedRecommendations.length,
-            total_profit_impact: sampleData.summary.total_profit_impact
+            ...dashboardData.summary,
+            total_recommendations: sortedRecommendations.length
           }
         };
 

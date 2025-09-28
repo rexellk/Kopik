@@ -141,6 +141,27 @@ export default function Inventory() {
     });
   }
 
+  async function triggerIntelligenceAnalysis() {
+    try {
+      console.log('🤖 Triggering AI analysis...');
+      const response = await fetch('http://localhost:8000/api/intelligence/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ AI analysis completed:', result.message);
+        // Wait a moment for the analysis to be processed
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    } catch (error) {
+      console.warn('Failed to trigger intelligence analysis:', error);
+    }
+  }
+
   async function handleDelete() {
     if (selected.size === 0) {
       alert("Please select items to delete.");
@@ -174,6 +195,9 @@ export default function Inventory() {
       // Clear selection
       setSelected(new Set());
       
+      // Trigger AI analysis after deletion
+      await triggerIntelligenceAnalysis();
+      
       // Refresh data
       if (refetchData) {
         await refetchData();
@@ -196,6 +220,10 @@ export default function Inventory() {
   async function handleAddProduct(productData) {
     try {
       await inventoryAPI.create(productData);
+      
+      // Trigger AI analysis after adding product
+      await triggerIntelligenceAnalysis();
+      
       // Refresh the data to show the new product
       if (refetchData) {
         await refetchData();
@@ -210,7 +238,7 @@ export default function Inventory() {
   const someChecked = selected.size > 0 && !allChecked;
 
 
-  // Get sample alerts from React context (should be from sample_frontend_response.json)
+  // Get alerts from React context (from /api/intelligence/dashboard)
   const sampleAlerts = data?.alerts ? data.alerts.slice(0, 3) : [];
 
   // Map priority to colors
