@@ -1,5 +1,4 @@
-import React, { createContext, useState, useEffect } from "react";
-import { healthCheck } from "../services/api"; // Using healthCheck as a placeholder for the new endpoint
+import { createContext, useState, useEffect } from "react";
 
 export const DataContext = createContext();
 
@@ -73,36 +72,31 @@ export const DataProvider = ({ children }) => {
         ...signal,
       }));
 
-      // Combine backend intelligence signals with sample data as fallback
+      // Combine backend intelligence signals with dashboard alerts as fallback
       const hybridIntelligenceSignals = [
         ...mappedIntelligenceSignals,
-        // Add sample alerts as additional intelligence signals if backend is limited
-        ...sampleData.alerts.map((alert) => ({
+        ...(dashboardData.alerts || []).map((alert) => ({
           name: alert.title || alert.message,
           category: alert.category,
           summary: alert.message,
           type: alert.type,
           priority: alert.priority,
-          // Keep original alert data
           ...alert,
         })),
       ];
 
-      // Combine live data with sample recommendations and inventory data
+      // Combine live data with recommendations and inventory data
       const combinedData = {
-        ...liveData,
+        ...dashboardData,
         recommendations: sortedRecommendations,
-        // Use hybrid intelligence signals for Intelligence Hub
         intelligenceSignals: hybridIntelligenceSignals,
-        // Keep original sample alerts for Inventory page
-        alerts: sampleData.alerts,
-        order_alerts: sampleData.order_alerts,
-        // Add actual inventory data
+        alerts: dashboardData.alerts || [],
+        order_alerts: dashboardData.order_alerts || [],
         inventory: inventoryData,
         summary: {
-          ...liveData.summary,
+          ...dashboardData.summary,
           total_recommendations: sortedRecommendations.length,
-          total_profit_impact: sampleData.summary.total_profit_impact,
+          total_profit_impact: dashboardData.metrics?.total_profit_impact || 0,
         },
       };
 
